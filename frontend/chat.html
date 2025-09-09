@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chat em Tempo Real</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f4f4f4;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      header {
+        background: #4caf50;
+        color: white;
+        padding: 20px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      #chat-box {
+        background: white;
+        width: 90%;
+        max-width: 600px;
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      #messages {
+        list-style: none;
+        padding: 0;
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 20px;
+      }
+      #messages li {
+        padding: 8px;
+        margin-bottom: 6px;
+        background: #e0f7fa;
+        border-radius: 5px;
+      }
+      input {
+        width: 80%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      button {
+        padding: 10px 15px;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        margin-left: 10px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #45a049;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h2>💬 Chat em Tempo Real</h2>
+    </header>
+    <div id="chat-box">
+      <ul id="messages"></ul>
+      <input id="username" placeholder="Seu nome ou ID" />
+      <input id="msgInput" placeholder="Digite sua mensagem..." />
+      <button onclick="sendMessage()">Enviar</button>
+    </div>
+
+    <script>
+      const socket = io();
+
+      socket.on("chat message", (msg) => {
+        const item = document.createElement("li");
+        item.textContent = msg;
+        document.getElementById("messages").appendChild(item);
+      });
+
+      function sendMessage() {
+        const input = document.getElementById("msgInput");
+        const username = document.getElementById("username").value || "Anônimo";
+        const msg = input.value;
+        if (msg.trim()) {
+          socket.emit("chat message", { username, msg });
+          input.value = "";
+        }
+      }
+    </script>
+  </body>
+</html>

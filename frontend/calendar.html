@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Agenda & Horas</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #f0f2f5;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      header {
+        background: #2196f3;
+        color: white;
+        padding: 20px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      section {
+        background: white;
+        width: 90%;
+        max-width: 600px;
+        margin: 20px 0;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        margin-top: 0;
+        color: #333;
+      }
+      input {
+        width: calc(100% - 22px);
+        padding: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      button {
+        padding: 10px 15px;
+        background: #2196f3;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      button:hover {
+        background: #1976d2;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        background: #e3f2fd;
+        padding: 8px;
+        margin-bottom: 6px;
+        border-radius: 5px;
+      }
+      #totalHoras {
+        font-weight: bold;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h2>📅 Agenda & Horas Complementares</h2>
+    </header>
+
+    <section>
+      <h2>Agendar atividade</h2>
+      <input id="voluntarioId" placeholder="ID do voluntário" />
+      <input id="beneficiarioId" placeholder="ID do beneficiário" />
+      <input id="data" placeholder="Data (YYYY-MM-DD)" />
+      <button onclick="agendar()">Agendar</button>
+    </section>
+
+    <section>
+      <h2>Consultar agenda</h2>
+      <input id="consultaId" placeholder="ID do usuário" />
+      <button onclick="consultarAgenda()">Consultar</button>
+      <ul id="agenda"></ul>
+    </section>
+
+    <section>
+      <h2>Horas complementares</h2>
+      <input id="horasId" placeholder="ID do voluntário" />
+      <input id="duracao" placeholder="Duração (em horas)" />
+      <button onclick="registrarHoras()">Registrar</button>
+      <button onclick="consultarHoras()">Consultar total</button>
+      <p id="totalHoras"></p>
+    </section>
+
+    <script>
+      async function agendar() {
+        const body = {
+          voluntarioId: Number(voluntarioId.value),
+          beneficiarioId: Number(beneficiarioId.value),
+          data: data.value,
+        };
+        await fetch("/agendar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        alert("Agendado com sucesso!");
+      }
+
+      async function consultarAgenda() {
+        const id = consultaId.value;
+        const res = await fetch(`/agenda/${id}`);
+        const dados = await res.json();
+        agenda.innerHTML = "";
+        dados.forEach((item) => {
+          const li = document.createElement("li");
+          li.textContent = `Voluntário ${item.voluntarioId} com Beneficiário ${item.beneficiarioId} em ${item.data}`;
+          agenda.appendChild(li);
+        });
+      }
+
+      async function registrarHoras() {
+        const body = {
+          voluntarioId: Number(horasId.value),
+          duracao: Number(duracao.value),
+        };
+        await fetch("/horas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        alert("Horas registradas!");
+      }
+
+      async function consultarHoras() {
+        const id = horasId.value;
+        const res = await fetch(`/horas/${id}`);
+        const dados = await res.json();
+        totalHoras.textContent = `Total de horas: ${dados.totalHoras}`;
+      }
+    </script>
+  </body>
+</html>
