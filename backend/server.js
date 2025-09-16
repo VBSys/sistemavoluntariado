@@ -6,6 +6,10 @@ const db = require("./config/db");
 
 // Rotas
 const userRoutes = require("./routes/userRoutes");
+const atividadesRoutes = require("./routes/atividades");
+const horasRoutes = require("./routes/horas");
+const avaliacaoRoutes = require("./routes/avaliacaoRoutes");
+const denunciaRoutes = require("./routes/denunciaRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -17,6 +21,10 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 
 // Prefixo das rotas da API
 app.use("/api/usuarios", userRoutes);
+app.use("/api/atividades", atividadesRoutes);
+app.use("/api/horas", horasRoutes);
+app.use("/api/avaliacoes", avaliacaoRoutes);
+app.use("/api/denuncias", denunciaRoutes);
 
 // Rota de teste direto no server.js
 app.get("/api/teste-conexao", (req, res) => {
