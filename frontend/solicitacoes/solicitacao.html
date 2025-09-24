@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cadastre-se</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="barra-topo">NexAssist</div>
+
+    <main class="centro">
+      <h1 class="titulo">Solicitação de Assistência</h1>
+
+      <section class="painel" aria-labelledby="form-titulo">
+        <h2 id="form-titulo" class="visualmente-oculto">
+          Formulário de solicitação
+        </h2>
+
+        <form id="form-solicitacao" action="#" method="post">
+          <div class="campo">
+            <label for="nome">Nome Completo</label>
+            <input
+              id="nome"
+              name="nome"
+              type="text"
+              autocomplete="name"
+              required
+            />
+          </div>
+
+          <div class="campo">
+            <label for="email">E-mail</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              required
+            />
+          </div>
+
+          <div class="campo">
+            <label for="telefone">Telefone</label>
+            <input
+              id="telefone"
+              name="telefone"
+              type="tel"
+              autocomplete="tel"
+              required
+            />
+          </div>
+
+          <div class="campo">
+            <label for="descricao">Descrição da Solicitação</label>
+            <textarea
+              id="descricao"
+              name="descricao"
+              rows="4"
+              required
+            ></textarea>
+          </div>
+
+          <div class="acoes">
+            <button class="botao" type="submit">Enviar Solicitação</button>
+          </div>
+        </form>
+      </section>
+  </body>
+</html>
