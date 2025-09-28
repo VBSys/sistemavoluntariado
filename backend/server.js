@@ -6,6 +6,10 @@ const db = require("./config/db");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
 
+const adminRoutes = require("./routes/adminRoutes");
+const voluntarioRoutes = require("./routes/voluntarioRoutes");
+const beneficiarioRoutes = require("./routes/beneficiarioRoutes");
+
 // Inicializa o Express
 const app = express();
 
@@ -18,9 +22,13 @@ const io = socketIo(server, {
   },
 });
 
+//Inicializa as Routes
+app.use("/api/admin", adminRoutes);
+app.use("/api/voluntario", voluntarioRoutes);
+app.use("/api/beneficiario", beneficiarioRoutes);
+
 // Middleware para JSON e arquivos estáticos
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../frontend")));
 
 // Swagger config
 const swaggerOptions = {
@@ -51,6 +59,9 @@ app.use("/api/atividades", atividadesRoutes);
 app.use("/api/horas", horasRoutes);
 app.use("/api/avaliacoes", avaliacaoRoutes);
 app.use("/api/denuncias", denunciaRoutes);
+
+// Middleware para arquivos estáticos (depois das rotas da API)
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 // Rota de teste de conexão
 app.get("/api/teste-conexao", (req, res) => {

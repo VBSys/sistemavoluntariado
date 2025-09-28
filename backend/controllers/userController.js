@@ -1,9 +1,13 @@
 const jwt = require("jsonwebtoken");
-const db = require("../config/db");
-const bcrypt = require("bcrypt");
 
-// 📌 Listar todos os usuários
-// 📌 Listar usuários com filtro opcional por tipo_usuario
+// Garante que o JWT_SECRET sempre tenha valor
+const JWT_SECRET = process.env.JWT_SECRET || "sua_chave_secreta";
+const bcrypt = require("bcrypt");
+const db = require("../config/db");
+
+//
+// 📌 Listar todos os usuários (com filtro opcional por email)
+//
 exports.listarUsuarios = (req, res) => {
   const { email } = req.query;
 
@@ -24,7 +28,30 @@ exports.listarUsuarios = (req, res) => {
   });
 };
 
-// 📌 Criar novo usuário
+//
+// 📌 Buscar usuário por ID
+//
+exports.buscarUsuarioPorId = (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+    SELECT id_usuario, nome_completo, email, tipo_usuario, sobre_mim
+    FROM usuarios
+    WHERE id_usuario = ?
+  `;
+
+  db.query(sql, [id], (err, results) => {
+    if (err) return res.status(500).json({ erro: "Erro ao buscar usuário" });
+    if (results.length === 0)
+      return res.status(404).json({ erro: "Usuário não encontrado" });
+
+    res.json(results[0]);
+  });
+};
+
+//
+// 📌 Criar novo usuário (com senha criptografada)
+//
 exports.criarUsuario = async (req, res) => {
   const { nome_completo, email, senha, tipo_usuario, sobre_mim } = req.body;
 
@@ -70,7 +97,9 @@ exports.criarUsuario = async (req, res) => {
   }
 };
 
-// 📌 Login de usuário
+//
+// 📌 Login de usuário (retorna token JWT)
+//
 exports.loginUsuario = (req, res) => {
   const { email, senha } = req.body;
 
@@ -90,39 +119,41 @@ exports.loginUsuario = (req, res) => {
 
       const token = jwt.sign(
         {
-          id: usuario.id,
+          id: usuario.id_usuario,
           tipo_usuario: usuario.tipo_usuario,
         },
-        process.env.JWT_SECRET,
+        JWT_SECRET,
         { expiresIn: "2h" }
       );
 
       res.json({
         token,
         usuario: {
-          id: usuario.id,
-          nome: usuario.nome_completo,
-          tipo: usuario.tipo_usuario,
+          id: usuario.id_usuario,
+          nome_completo: usuario.nome_completo,
+          tipo_usuario: usuario.tipo_usuario,
         },
       });
     }
   );
 };
 
-exports.buscarUsuarioPorId = (req, res) => {
-  const { id } = req.params;
+//
+// 📌 Retornar dados do usuário logado (usando token)
+//
+exports.getUsuarioLogado = (req, res) => {
+  const userId = req.user.id;
 
-  const sql = `
-    SELECT id_usuario, nome_completo, email, tipo_usuario, sobre_mim
-    FROM usuarios
-    WHERE id_usuario = ?
-  `;
+  db.query(
+    "SELECT id_usuario, nome_completo, email, tipo_usuario, sobre_mim FROM usuarios WHERE id_usuario = ?",
+    [userId],
+    (err, results) => {
+      if (err)
+        return res.status(500).json({ erro: "Erro ao buscar usuário logado" });
+      if (results.length === 0)
+        return res.status(404).json({ erro: "Usuário não encontrado" });
 
-  db.query(sql, [id], (err, results) => {
-    if (err) return res.status(500).json({ erro: "Erro ao buscar usuário" });
-    if (results.length === 0)
-      return res.status(404).json({ erro: "Usuário não encontrado" });
-
-    res.json(results[0]);
-  });
+      res.json(results[0]);
+    }
+  );
 };

@@ -1,13 +1,15 @@
 const db = require("../config/db");
 
-// Registrar nova atividade
+//
+// 📌 Registrar nova atividade (admin)
+//
 exports.criarAtividade = (req, res) => {
   const { titulo, descricao, data_inicio, data_fim } = req.body;
 
   if (!titulo || !descricao) {
-    return res
-      .status(400)
-      .json({ erro: "Título e descrição são obrigatórios" });
+    return res.status(400).json({
+      erro: "Título e descrição são obrigatórios",
+    });
   }
 
   const sql = `
@@ -16,11 +18,13 @@ exports.criarAtividade = (req, res) => {
   `;
 
   db.query(sql, [titulo, descricao, data_inicio, data_fim], (err, result) => {
-    if (err)
+    if (err) {
+      console.error("❌ Erro ao registrar atividade:", err.message);
       return res.status(500).json({ erro: "Erro ao registrar atividade" });
+    }
 
     res.status(201).json({
-      mensagem: "Atividade registrada",
+      mensagem: "Atividade registrada com sucesso",
       atividade: {
         id_atividade: result.insertId,
         titulo,
@@ -32,31 +36,47 @@ exports.criarAtividade = (req, res) => {
   });
 };
 
-// Listar todas as atividades
+//
+// 📌 Listar todas as atividades (todos os perfis)
+//
 exports.listarAtividades = (req, res) => {
-  db.query("SELECT * FROM atividades", (err, results) => {
-    if (err) return res.status(500).json({ erro: "Erro ao buscar atividades" });
+  const sql = "SELECT * FROM atividades";
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("❌ Erro ao buscar atividades:", err.message);
+      return res.status(500).json({ erro: "Erro ao buscar atividades" });
+    }
+
     res.json(results);
   });
 };
 
-// Buscar detalhes de uma atividade
+//
+// 📌 Buscar detalhes de uma atividade por ID
+//
 exports.buscarAtividadePorId = (req, res) => {
   const { id } = req.params;
-  db.query(
-    "SELECT * FROM atividades WHERE id_atividade = ?",
-    [id],
-    (err, results) => {
-      if (err)
-        return res.status(500).json({ erro: "Erro ao buscar atividade" });
-      if (results.length === 0)
-        return res.status(404).json({ erro: "Atividade não encontrada" });
-      res.json(results[0]);
+
+  const sql = "SELECT * FROM atividades WHERE id_atividade = ?";
+
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error("❌ Erro ao buscar atividade:", err.message);
+      return res.status(500).json({ erro: "Erro ao buscar atividade" });
     }
-  );
+
+    if (results.length === 0) {
+      return res.status(404).json({ erro: "Atividade não encontrada" });
+    }
+
+    res.json(results[0]);
+  });
 };
 
-// Atualizar atividade
+//
+// 📌 Atualizar atividade (admin)
+//
 exports.atualizarAtividade = (req, res) => {
   const { id } = req.params;
   const { titulo, descricao, data_inicio, data_fim } = req.body;
@@ -71,29 +91,38 @@ exports.atualizarAtividade = (req, res) => {
     sql,
     [titulo, descricao, data_inicio, data_fim, id],
     (err, result) => {
-      if (err)
+      if (err) {
+        console.error("❌ Erro ao atualizar atividade:", err.message);
         return res.status(500).json({ erro: "Erro ao atualizar atividade" });
-      if (result.affectedRows === 0)
+      }
+
+      if (result.affectedRows === 0) {
         return res.status(404).json({ erro: "Atividade não encontrada" });
+      }
 
       res.json({ mensagem: "Atividade atualizada com sucesso" });
     }
   );
 };
 
-// Remover atividade
+//
+// 📌 Remover atividade (admin)
+//
 exports.removerAtividade = (req, res) => {
   const { id } = req.params;
-  db.query(
-    "DELETE FROM atividades WHERE id_atividade = ?",
-    [id],
-    (err, result) => {
-      if (err)
-        return res.status(500).json({ erro: "Erro ao remover atividade" });
-      if (result.affectedRows === 0)
-        return res.status(404).json({ erro: "Atividade não encontrada" });
 
-      res.json({ mensagem: "Atividade removida com sucesso" });
+  const sql = "DELETE FROM atividades WHERE id_atividade = ?";
+
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      console.error("❌ Erro ao remover atividade:", err.message);
+      return res.status(500).json({ erro: "Erro ao remover atividade" });
     }
-  );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ erro: "Atividade não encontrada" });
+    }
+
+    res.json({ mensagem: "Atividade removida com sucesso" });
+  });
 };
