@@ -1,37 +1,10 @@
 // 📁 routes/atividadeRoutes.js
 const express = require("express");
 const router = express.Router();
-const atividadeController = require("../controllers/atividadeController");
-const auth = require("../middlewares/auth");
-
-router.post(
-  "/",
-  auth,
-  (req, res, next) => {
-    if (req.user.tipo_usuario !== "admin") {
-      return res
-        .status(403)
-        .json({ erro: "Apenas administradores podem criar atividades" });
-    }
-    next();
-  },
-  atividadeController.criarAtividade
-);
-
-// POST /atividades - Criar nova atividade
-router.post("/", atividadeController.criarAtividade);
-
-// GET /atividades - Listar todas as atividades
-router.get("/", atividadeController.listarAtividades);
-
-// GET /atividades/:id - Buscar atividade por ID
-router.get("/:id", atividadeController.buscarAtividadePorId);
-
-// PUT /atividades/:id - Atualizar atividade
-router.put("/:id", atividadeController.atualizarAtividade);
-
-// DELETE /atividades/:id - Remover atividade
-router.delete("/:id", atividadeController.removerAtividade);
+// Atividades removidas: tabela não existe mais. Retornamos 410 Gone para todas as rotas.
+router.use((req, res) => {
+  res.status(410).json({ erro: "Recursos de atividades removidos" });
+});
 
 module.exports = router;
 

@@ -3,16 +3,18 @@ const express = require("express");
 
 const mongoose = require("mongoose");
 const userRoutes = require("./routes/userRoutes");
-const atividadeRoutes = require("./routes/atividadeRoutes");
 const horasRoutes = require("./routes/horasRoutes");
 const avaliacaoRoutes = require("./routes/avaliacaoRoutes");
 const denunciaRoutes = require("./routes/denunciaRoutes");
+const tipoUsuarioRoutes = require("./routes/tipoUsuarioRoutes");
+
+app.use("/api/tipos-usuario", tipoUsuarioRoutes);
 
 const app = express();
 mongoose.connect(process.env.MONGO_URI);
 
 app.use("/api/usuarios", userRoutes);
-app.use("/api/atividades", atividadeRoutes);
+// atividades routes removed - tabela 'atividades' não existe mais
 app.use("/api/horas", horasRoutes);
 app.use("/api/avaliacoes", avaliacaoRoutes);
 app.use("/api/denuncias", denunciaRoutes);

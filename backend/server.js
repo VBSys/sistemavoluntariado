@@ -9,6 +9,7 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const adminRoutes = require("./routes/adminRoutes");
 const voluntarioRoutes = require("./routes/voluntarioRoutes");
 const beneficiarioRoutes = require("./routes/beneficiarioRoutes");
+//
 
 // Inicializa o Express
 const app = express();
@@ -21,6 +22,9 @@ const io = socketIo(server, {
     methods: ["GET", "POST"],
   },
 });
+
+// Socket.IO
+require("./socket")(io);
 
 //Inicializa as Routes
 app.use("/api/admin", adminRoutes);
@@ -48,14 +52,13 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Importa rotas
 const userRoutes = require("./routes/userRoutes");
-const atividadesRoutes = require("./routes/atividadeRoutes");
 const horasRoutes = require("./routes/horasRoutes");
 const avaliacaoRoutes = require("./routes/avaliacaoRouter");
 const denunciaRoutes = require("./routes/denunciaRoutes");
 
 // Define rotas com prefixo
 app.use("/api/usuarios", userRoutes);
-app.use("/api/atividades", atividadesRoutes);
+// atividades route removed (tabela 'atividades' não existe mais)
 app.use("/api/horas", horasRoutes);
 app.use("/api/avaliacoes", avaliacaoRoutes);
 app.use("/api/denuncias", denunciaRoutes);
@@ -77,22 +80,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ erro: "Erro interno do servidor" });
 });
 
-// Socket.IO
-io.on("connection", (socket) => {
-  console.log("🟢 Novo usuário conectado");
-
-  socket.on("chat message", ({ userId, username, msg }) => {
-    const mensagemFormatada = `${username || "Usuário"}: ${msg}`;
-    io.emit("chat message", mensagemFormatada);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("🔴 Usuário desconectado");
-  });
-});
-
 // Inicializa o servidor
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });
+
+//

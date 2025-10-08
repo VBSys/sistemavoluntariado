@@ -12,9 +12,30 @@ exports.listarUsuarios = (req, res) => {
   const { email } = req.query;
 
   let sql = `
-    SELECT id_usuario, nome_completo, email, tipo_usuario, sobre_mim
-    FROM usuarios
+    SELECT u.id_usuario, u.nome_completo, u.email, t.nome_tipo AS tipo_usuario
+FROM usuarios u
+JOIN tipos_usuario t ON u.id_tipo = t.id_tipo;
+
   `;
+  const params = [];
+
+  if (email) {
+    sql += " WHERE email = ?";
+    params.push(email);
+  }
+
+  db.query(sql, params, (err, results) => {
+    if (err) return res.status(500).json({ erro: "Erro ao buscar usuários" });
+    res.json(results);
+  });
+};
+exports.listarUsuarios = (req, res) => {
+  const { email } = req.query;
+
+  let sql = `
+      SELECT u.id_usuario, u.nome_completo, u.email, u.id_tipo
+      FROM usuarios u
+    `;
   const params = [];
 
   if (email) {
@@ -35,10 +56,27 @@ exports.buscarUsuarioPorId = (req, res) => {
   const { id } = req.params;
 
   const sql = `
-    SELECT id_usuario, nome_completo, email, tipo_usuario, sobre_mim
+    SELECT id_usuario, nome_completo, email, tipo_usuario, id_tipo
     FROM usuarios
     WHERE id_usuario = ?
   `;
+
+  db.query(sql, [id], (err, results) => {
+    if (err) return res.status(500).json({ erro: "Erro ao buscar usuário" });
+    if (results.length === 0)
+      return res.status(404).json({ erro: "Usuário não encontrado" });
+
+    res.json(results[0]);
+  });
+};
+exports.buscarUsuarioPorId = (req, res) => {
+  const { id } = req.params;
+
+  const sql = `
+      SELECT id_usuario, nome_completo, email, id_tipo
+      FROM usuarios
+      WHERE id_usuario = ?
+    `;
 
   db.query(sql, [id], (err, results) => {
     if (err) return res.status(500).json({ erro: "Erro ao buscar usuário" });
@@ -53,12 +91,12 @@ exports.buscarUsuarioPorId = (req, res) => {
 // 📌 Criar novo usuário (com senha criptografada)
 //
 exports.criarUsuario = async (req, res) => {
-  const { nome_completo, email, senha, tipo_usuario, sobre_mim } = req.body;
+  const { nome_completo, email, senha, id_tipo } = req.body;
 
-  if (!nome_completo || !email || !senha || !tipo_usuario) {
+  if (!nome_completo || !email || !senha || !id_tipo) {
     return res.status(400).json({
       erro: "Campos obrigatórios ausentes",
-      detalhes: "nome_completo, email, senha e tipo_usuario são obrigatórios",
+      detalhes: "nome_completo, email, senha e id_tipo são obrigatórios",
     });
   }
 
@@ -66,28 +104,62 @@ exports.criarUsuario = async (req, res) => {
     const senhaCriptografada = await bcrypt.hash(senha, 10);
 
     const query = `
-      INSERT INTO usuarios (nome_completo, email, senha, tipo_usuario, sobre_mim)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO usuarios (nome_completo, email, senha, id_tipo)
+      VALUES (?, ?, ?, ?)
     `;
 
     db.query(
       query,
-      [
-        nome_completo,
-        email,
-        senhaCriptografada,
-        tipo_usuario,
-        sobre_mim || null,
-      ],
+      [nome_completo, email, senhaCriptografada || null, id_tipo],
       (err, result) => {
         if (err) {
+          console.log("ola");
           console.error("❌ Erro ao criar usuário:", err.message);
           return res.status(500).json({ erro: "Erro ao criar usuário" });
         }
 
         res.status(201).json({
           mensagem: "Usuário cadastrado com sucesso",
-          id: result.insertId,
+          id_usuario: result.insertId,
+        });
+      }
+    );
+  } catch (error) {
+    console.error("❌ Erro ao criptografar senha:", error.message);
+    res.status(500).json({ erro: "Erro ao criptografar senha" });
+  }
+};
+exports.criarUsuario = async (req, res) => {
+  const { nome_completo, email, senha, id_tipo } = req.body;
+
+  if (!nome_completo || !email || !senha || !id_tipo) {
+    return res.status(400).json({
+      erro: "Campos obrigatórios ausentes",
+      detalhes: "nome_completo, email, senha e id_tipo são obrigatórios",
+    });
+  }
+
+  try {
+    const senhaCriptografada = await bcrypt.hash(senha, 10);
+
+    const query = `
+        INSERT INTO usuarios (nome_completo, email, senha, id_tipo)
+        VALUES (?, ?, ?, ?)
+      `;
+
+    db.query(
+      query,
+      [nome_completo, email, senhaCriptografada || null, id_tipo],
+      (err, result) => {
+        if (err) {
+          console.log("ola2");
+          console.error("❌ Usuário já existe:", err.message);
+          return res.status(500).json({ erro: "Usuário já existe" });
+        }
+
+        res.status(201).json({
+          mensagem: "Usuário cadastrado com sucesso",
+          id_usuario: result.insertId,
         });
       }
     );
@@ -104,7 +176,7 @@ exports.loginUsuario = (req, res) => {
   const { email, senha } = req.body;
 
   db.query(
-    "SELECT * FROM usuarios WHERE email = ?",
+    "SELECT u.id_usuario, u.nome_completo, u.email, u.senha, t.nome_tipo AS tipo_usuario FROM usuarios u JOIN tipos_usuario t ON u.id_tipo = t.id_tipo WHERE u.email = ?",
     [email],
     async (err, results) => {
       if (err) return res.status(500).json({ erro: err.message });
@@ -120,7 +192,7 @@ exports.loginUsuario = (req, res) => {
       const token = jwt.sign(
         {
           id: usuario.id_usuario,
-          tipo_usuario: usuario.tipo_usuario,
+          id_tipo: usuario.id_tipo,
         },
         JWT_SECRET,
         { expiresIn: "2h" }
@@ -131,7 +203,44 @@ exports.loginUsuario = (req, res) => {
         usuario: {
           id: usuario.id_usuario,
           nome_completo: usuario.nome_completo,
-          tipo_usuario: usuario.tipo_usuario,
+          id_tipo: usuario.id_tipo,
+        },
+      });
+    }
+  );
+};
+exports.loginUsuario = (req, res) => {
+  const { email, senha } = req.body;
+
+  db.query(
+    "SELECT u.id_usuario, u.nome_completo, u.email, u.senha, u.id_tipo FROM usuarios u WHERE u.email = ?",
+    [email],
+    async (err, results) => {
+      if (err) return res.status(500).json({ erro: err.message });
+      if (results.length === 0)
+        return res.status(401).json({ erro: "Usuário não encontrado" });
+
+      const usuario = results[0];
+      const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
+      if (!senhaValida)
+        return res.status(401).json({ erro: "Senha incorreta" });
+
+      const token = jwt.sign(
+        {
+          id: usuario.id_usuario,
+          id_tipo: usuario.id_tipo, // isso é o que identifica se é admin
+        },
+        JWT_SECRET,
+        { expiresIn: "2h" }
+      );
+
+      res.json({
+        token,
+        usuario: {
+          id: usuario.id_usuario,
+          nome_completo: usuario.nome_completo,
+          id_tipo: usuario.id_tipo,
         },
       });
     }
@@ -145,7 +254,7 @@ exports.getUsuarioLogado = (req, res) => {
   const userId = req.user.id;
 
   db.query(
-    "SELECT id_usuario, nome_completo, email, tipo_usuario, sobre_mim FROM usuarios WHERE id_usuario = ?",
+    "SELECT id_usuario, nome_completo, email, tipo_usuario, id_tipo FROM usuarios WHERE id_usuario = ?",
     [userId],
     (err, results) => {
       if (err)
@@ -156,4 +265,125 @@ exports.getUsuarioLogado = (req, res) => {
       res.json(results[0]);
     }
   );
+};
+
+// Endpoint de debug: retorna o payload do token para verificar o conteúdo
+exports.meToken = (req, res) => {
+  if (!req.user) return res.status(401).json({ erro: "Não autenticado" });
+  res.json({ tokenPayload: req.user });
+};
+exports.getUsuarioLogado = (req, res) => {
+  const userId = req.user.id;
+
+  db.query(
+    "SELECT id_usuario, nome_completo, email, id_tipo FROM usuarios WHERE id_usuario = ?",
+    [userId],
+    (err, results) => {
+      if (err)
+        return res.status(500).json({ erro: "Erro ao buscar usuário logado" });
+      if (results.length === 0)
+        return res.status(404).json({ erro: "Usuário não encontrado" });
+
+      res.json(results[0]);
+    }
+  );
+};
+
+exports.listarPorTipo = (req, res) => {
+  const { id_tipo } = req.params;
+
+  const query = `
+    SELECT u.id_usuario, u.nome_completo, u.email, t.nome_tipo AS tipo_usuario
+    FROM usuarios u
+    JOIN tipos_usuario t ON u.id_tipo = t.id_tipo
+    WHERE u.id_tipo = ?
+  `;
+
+  db.query(query, [id_tipo], (err, results) => {
+    if (err)
+      return res.status(500).json({ erro: "Erro ao buscar usuários por tipo" });
+    res.json(results);
+  });
+};
+exports.listarPorTipo = (req, res) => {
+  const { id_tipo } = req.params;
+
+  const query = `
+      SELECT u.id_usuario, u.nome_completo, u.email, u.id_tipo
+      FROM usuarios u
+      WHERE u.id_tipo = ?
+    `;
+
+  db.query(query, [id_tipo], (err, results) => {
+    if (err)
+      return res.status(500).json({ erro: "Erro ao buscar usuários por tipo" });
+    res.json(results);
+  });
+};
+
+exports.editarUsuario = async (req, res) => {
+  const { id } = req.params;
+  const { nome_completo, email, senha, id_tipo } = req.body;
+
+  try {
+    // Monta os campos dinamicamente
+    const campos = [];
+    const valores = [];
+
+    if (nome_completo) {
+      campos.push("nome_completo = ?");
+      valores.push(nome_completo);
+    }
+
+    if (email) {
+      campos.push("email = ?");
+      valores.push(email);
+    }
+
+    if (senha) {
+      const senhaCriptografada = await bcrypt.hash(senha, 10);
+      campos.push("senha = ?");
+      valores.push(senhaCriptografada);
+    }
+
+    if (id_tipo) {
+      campos.push("id_tipo = ?");
+      valores.push(id_tipo);
+    }
+
+    if (campos.length === 0) {
+      return res.status(400).json({ erro: "Nenhum campo para atualizar" });
+    }
+
+    const query = `UPDATE usuarios SET ${campos.join(
+      ", "
+    )} WHERE id_usuario = ?`;
+    valores.push(id);
+
+    db.query(query, valores, (err, result) => {
+      if (err) return res.status(500).json({ erro: "Erro ao editar usuário" });
+      res.json({ mensagem: "Perfil atualizado com sucesso" });
+    });
+  } catch (error) {
+    res.status(500).json({ erro: "Erro ao processar edição" });
+  }
+};
+
+exports.deletarUsuario = (req, res) => {
+  const { id } = req.params;
+
+  const query = "DELETE FROM usuarios WHERE id_usuario = ?";
+
+  db.query(query, [id], (err, resultado) => {
+    if (err) {
+      console.error("❌ Erro ao deletar usuário:", err.message);
+      return res.status(500).json({ erro: "Erro ao deletar usuário" });
+    }
+
+    if (resultado.affectedRows === 0) {
+      return res.status(404).json({ erro: "Usuário não encontrado" });
+    }
+
+    res.json({ mensagem: "Usuário deletado com sucesso" });
+  });
 };

@@ -1,30 +1,30 @@
 const express = require("express");
 const router = express.Router();
-const auth = require("../middlewares/auth");
+const { autenticar } = require("../middlewares/auth");
 const verificarVoluntario = require("../middlewares/verificarVoluntario");
 const horasController = require("../controllers/horasController");
 
 router.post(
   "/horas",
-  auth,
+  autenticar,
   verificarVoluntario,
   horasController.registrarHorasComplementares
 );
 router.get(
   "/horas/:id",
-  auth,
+  autenticar,
   verificarVoluntario,
   horasController.totalHorasVoluntario
 );
 router.get(
   "/certificado/:id",
-  auth,
+  autenticar,
   verificarVoluntario,
   horasController.gerarCertificado
 );
 router.get(
   "/horas-complementares/:id",
-  auth,
+  autenticar,
   verificarVoluntario,
   horasController.totalHorasComplementares
 );

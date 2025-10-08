@@ -37,11 +37,11 @@ exports.registrarHorasComplementares = (req, res) => {
 exports.totalHorasVoluntario = (req, res) => {
   const { id } = req.params;
 
+  // Como tabela 'atividades' foi removida, calculamos total pelas horas_registradas
   const sql = `
-    SELECT v.id_usuario, v.nome_completo, SUM(a.carga_horaria) AS total_horas
-    FROM voluntarios_atividades va
-    JOIN usuarios v ON va.id_voluntario = v.id_usuario
-    JOIN atividades a ON va.id_atividade = a.id_atividade
+    SELECT v.id_usuario, v.nome_completo, COALESCE(SUM(hr.horas),0) AS total_horas
+    FROM horas_registradas hr
+    JOIN usuarios v ON hr.id_voluntario = v.id_usuario
     WHERE v.id_usuario = ?
     GROUP BY v.id_usuario, v.nome_completo
   `;
@@ -69,10 +69,9 @@ exports.gerarCertificado = (req, res) => {
   const { id } = req.params;
 
   const sql = `
-    SELECT v.id_usuario, v.nome_completo, SUM(a.carga_horaria) AS total_horas
-    FROM voluntarios_atividades va
-    JOIN usuarios v ON va.id_voluntario = v.id_usuario
-    JOIN atividades a ON va.id_atividade = a.id_atividade
+    SELECT v.id_usuario, v.nome_completo, COALESCE(SUM(hr.horas),0) AS total_horas
+    FROM horas_registradas hr
+    JOIN usuarios v ON hr.id_voluntario = v.id_usuario
     WHERE v.id_usuario = ?
     GROUP BY v.id_usuario, v.nome_completo
   `;

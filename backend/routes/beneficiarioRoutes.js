@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const auth = require("../middlewares/auth");
+const { autenticar } = require("../middlewares/auth");
 const verificarBeneficiario = require("../middlewares/verificarBeneficiario");
 
 // Exemplo de rota de avaliação ou denúncia
@@ -8,7 +8,7 @@ const denunciaController = require("../controllers/denunciaController");
 
 router.post(
   "/denuncias",
-  auth,
+  autenticar,
   verificarBeneficiario,
   denunciaController.criarDenuncia
 );

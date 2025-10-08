@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chat em Tempo Real</title>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial;
+        padding: 20px;
+      }
+      #chat {
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 300px;
+        overflow-y: scroll;
+        margin-bottom: 10px;
+      }
+      .msg {
+        margin: 5px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Chat em Tempo Real</h2>
+
+    <div>
+      <label>Seu ID (remetente):</label>
+      <input type="number" id="remetente" />
+    </div>
+    <div>
+      <label>ID do destinatário:</label>
+      <input type="number" id="destinatario" />
+    </div>
+
+    <div id="chat"></div>
+
+    <input type="text" id="mensagem" placeholder="Digite sua mensagem..." />
+    <button onclick="enviarMensagem()">Enviar</button>
+
+    <script>
+      const socket = io("http://localhost:3000");
+
+      socket.on("mensagem", (data) => {
+        const chat = document.getElementById("chat");
+        const msg = document.createElement("div");
+        msg.className = "msg";
+        msg.innerHTML = `<strong>${data.id_remetente}:</strong> ${data.mensagem}`;
+        chat.appendChild(msg);
+        chat.scrollTop = chat.scrollHeight;
+      });
+
+      function enviarMensagem() {
+        const id_remetente = document.getElementById("remetente").value;
+        const id_destinatario = document.getElementById("destinatario").value;
+        const mensagem = document.getElementById("mensagem").value;
+
+        if (!id_remetente || !id_destinatario || !mensagem)
+          return alert("Preencha todos os campos");
+
+        socket.emit("mensagem", {
+          id_remetente: parseInt(id_remetente),
+          id_destinatario: parseInt(id_destinatario),
+          mensagem,
+        });
+
+        document.getElementById("mensagem").value = "";
+      }
+    </script>
+  </body>
+</html>
