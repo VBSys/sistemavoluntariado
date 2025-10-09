@@ -8,29 +8,11 @@ const db = require("../config/db");
 //
 // 📌 Listar todos os usuários (com filtro opcional por email)
 //
+
 exports.listarUsuarios = (req, res) => {
   const { email } = req.query;
-
-  let sql = `
-    SELECT u.id_usuario, u.nome_completo, u.email, t.nome_tipo AS tipo_usuario
-FROM usuarios u
-JOIN tipos_usuario t ON u.id_tipo = t.id_tipo;
-
-  `;
-  const params = [];
-
-  if (email) {
-    sql += " WHERE email = ?";
-    params.push(email);
-  }
-
-  db.query(sql, params, (err, results) => {
-    if (err) return res.status(500).json({ erro: "Erro ao buscar usuários" });
-    res.json(results);
-  });
-};
-exports.listarUsuarios = (req, res) => {
-  const { email } = req.query;
+  const { id_tipo } = req.query;
+  const { nome_completo } = req.query;
 
   let sql = `
       SELECT u.id_usuario, u.nome_completo, u.email, u.id_tipo
@@ -38,9 +20,18 @@ exports.listarUsuarios = (req, res) => {
     `;
   const params = [];
 
+  if (nome_completo) {
+    sql += " WHERE nome_completo = ?";
+    params.push(nome_completo);
+  }
+
   if (email) {
     sql += " WHERE email = ?";
     params.push(email);
+  }
+  if (id_tipo) {
+    sql += " WHERE id_tipo = ?";
+    params.push(id_tipo);
   }
 
   db.query(sql, params, (err, results) => {
@@ -52,23 +43,7 @@ exports.listarUsuarios = (req, res) => {
 //
 // 📌 Buscar usuário por ID
 //
-exports.buscarUsuarioPorId = (req, res) => {
-  const { id } = req.params;
 
-  const sql = `
-    SELECT id_usuario, nome_completo, email, tipo_usuario, id_tipo
-    FROM usuarios
-    WHERE id_usuario = ?
-  `;
-
-  db.query(sql, [id], (err, results) => {
-    if (err) return res.status(500).json({ erro: "Erro ao buscar usuário" });
-    if (results.length === 0)
-      return res.status(404).json({ erro: "Usuário não encontrado" });
-
-    res.json(results[0]);
-  });
-};
 exports.buscarUsuarioPorId = (req, res) => {
   const { id } = req.params;
 
@@ -90,45 +65,7 @@ exports.buscarUsuarioPorId = (req, res) => {
 //
 // 📌 Criar novo usuário (com senha criptografada)
 //
-exports.criarUsuario = async (req, res) => {
-  const { nome_completo, email, senha, id_tipo } = req.body;
 
-  if (!nome_completo || !email || !senha || !id_tipo) {
-    return res.status(400).json({
-      erro: "Campos obrigatórios ausentes",
-      detalhes: "nome_completo, email, senha e id_tipo são obrigatórios",
-    });
-  }
-
-  try {
-    const senhaCriptografada = await bcrypt.hash(senha, 10);
-
-    const query = `
-      INSERT INTO usuarios (nome_completo, email, senha, id_tipo)
-      VALUES (?, ?, ?, ?)
-    `;
-
-    db.query(
-      query,
-      [nome_completo, email, senhaCriptografada || null, id_tipo],
-      (err, result) => {
-        if (err) {
-          console.log("ola");
-          console.error("❌ Erro ao criar usuário:", err.message);
-          return res.status(500).json({ erro: "Erro ao criar usuário" });
-        }
-
-        res.status(201).json({
-          mensagem: "Usuário cadastrado com sucesso",
-          id_usuario: result.insertId,
-        });
-      }
-    );
-  } catch (error) {
-    console.error("❌ Erro ao criptografar senha:", error.message);
-    res.status(500).json({ erro: "Erro ao criptografar senha" });
-  }
-};
 exports.criarUsuario = async (req, res) => {
   const { nome_completo, email, senha, id_tipo } = req.body;
 
@@ -176,43 +113,6 @@ exports.loginUsuario = (req, res) => {
   const { email, senha } = req.body;
 
   db.query(
-    "SELECT u.id_usuario, u.nome_completo, u.email, u.senha, t.nome_tipo AS tipo_usuario FROM usuarios u JOIN tipos_usuario t ON u.id_tipo = t.id_tipo WHERE u.email = ?",
-    [email],
-    async (err, results) => {
-      if (err) return res.status(500).json({ erro: err.message });
-      if (results.length === 0)
-        return res.status(401).json({ erro: "Usuário não encontrado" });
-
-      const usuario = results[0];
-      const senhaValida = await bcrypt.compare(senha, usuario.senha);
-
-      if (!senhaValida)
-        return res.status(401).json({ erro: "Senha incorreta" });
-
-      const token = jwt.sign(
-        {
-          id: usuario.id_usuario,
-          id_tipo: usuario.id_tipo,
-        },
-        JWT_SECRET,
-        { expiresIn: "2h" }
-      );
-
-      res.json({
-        token,
-        usuario: {
-          id: usuario.id_usuario,
-          nome_completo: usuario.nome_completo,
-          id_tipo: usuario.id_tipo,
-        },
-      });
-    }
-  );
-};
-exports.loginUsuario = (req, res) => {
-  const { email, senha } = req.body;
-
-  db.query(
     "SELECT u.id_usuario, u.nome_completo, u.email, u.senha, u.id_tipo FROM usuarios u WHERE u.email = ?",
     [email],
     async (err, results) => {
@@ -229,7 +129,7 @@ exports.loginUsuario = (req, res) => {
       const token = jwt.sign(
         {
           id: usuario.id_usuario,
-          id_tipo: usuario.id_tipo, // isso é o que identifica se é admin
+          id_tipo: usuario.id_tipo,
         },
         JWT_SECRET,
         { expiresIn: "2h" }
@@ -250,22 +150,6 @@ exports.loginUsuario = (req, res) => {
 //
 // 📌 Retornar dados do usuário logado (usando token)
 //
-exports.getUsuarioLogado = (req, res) => {
-  const userId = req.user.id;
-
-  db.query(
-    "SELECT id_usuario, nome_completo, email, tipo_usuario, id_tipo FROM usuarios WHERE id_usuario = ?",
-    [userId],
-    (err, results) => {
-      if (err)
-        return res.status(500).json({ erro: "Erro ao buscar usuário logado" });
-      if (results.length === 0)
-        return res.status(404).json({ erro: "Usuário não encontrado" });
-
-      res.json(results[0]);
-    }
-  );
-};
 
 // Endpoint de debug: retorna o payload do token para verificar o conteúdo
 exports.meToken = (req, res) => {
@@ -289,22 +173,6 @@ exports.getUsuarioLogado = (req, res) => {
   );
 };
 
-exports.listarPorTipo = (req, res) => {
-  const { id_tipo } = req.params;
-
-  const query = `
-    SELECT u.id_usuario, u.nome_completo, u.email, t.nome_tipo AS tipo_usuario
-    FROM usuarios u
-    JOIN tipos_usuario t ON u.id_tipo = t.id_tipo
-    WHERE u.id_tipo = ?
-  `;
-
-  db.query(query, [id_tipo], (err, results) => {
-    if (err)
-      return res.status(500).json({ erro: "Erro ao buscar usuários por tipo" });
-    res.json(results);
-  });
-};
 exports.listarPorTipo = (req, res) => {
   const { id_tipo } = req.params;
 
@@ -367,23 +235,4 @@ exports.editarUsuario = async (req, res) => {
   } catch (error) {
     res.status(500).json({ erro: "Erro ao processar edição" });
   }
-};
-
-exports.deletarUsuario = (req, res) => {
-  const { id } = req.params;
-
-  const query = "DELETE FROM usuarios WHERE id_usuario = ?";
-
-  db.query(query, [id], (err, resultado) => {
-    if (err) {
-      console.error("❌ Erro ao deletar usuário:", err.message);
-      return res.status(500).json({ erro: "Erro ao deletar usuário" });
-    }
-
-    if (resultado.affectedRows === 0) {
-      return res.status(404).json({ erro: "Usuário não encontrado" });
-    }
-
-    res.json({ mensagem: "Usuário deletado com sucesso" });
-  });
 };

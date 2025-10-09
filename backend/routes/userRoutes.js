@@ -9,12 +9,7 @@ const descricaoController = require("../controllers/descricaoController");
 // const denunciaController = require("../controllers/denunciaController");
 
 // Rota para deletar usuário (somente admin)
-router.delete(
-  "/:id",
-  autenticar,
-  verificarAdmin,
-  userController.deletarUsuario
-);
+
 /**
  * @swagger
  * /api/usuarios:
@@ -70,5 +65,11 @@ router.post(
 );
 
 router.get("/:id/descricao", descricaoController.listarDescricao);
+
+router.put(
+  "/:id/habilidades",
+  autenticar,
+  habilidadesController.editarHabilidades
+);
 
 module.exports = router;

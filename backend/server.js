@@ -58,6 +58,7 @@ const denunciaRoutes = require("./routes/denunciaRoutes");
 
 // Define rotas com prefixo
 app.use("/api/usuarios", userRoutes);
+app.use("/api/usuarios", adminRoutes);
 // atividades route removed (tabela 'atividades' não existe mais)
 app.use("/api/horas", horasRoutes);
 app.use("/api/avaliacoes", avaliacaoRoutes);

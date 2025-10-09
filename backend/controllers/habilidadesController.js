@@ -38,6 +38,42 @@ exports.cadastrarHabilidades = async (req, res) => {
   }
 };
 
+/////////////////////
+exports.editarHabilidades = async (req, res) => {
+  const { habilidades } = req.body;
+  const id_usuario = parseInt(req.params.id);
+  console.log(habilidades, id_usuario);
+  if (req.user.id !== id_usuario) {
+    return res
+      .status(403)
+      .json({ erro: "Você só pode editar seu próprio perfil." });
+  }
+
+  if (!Array.isArray(habilidades) || habilidades.length > 3) {
+    return res.status(400).json({ erro: "Máximo de 3 habilidades permitido." });
+  }
+
+  try {
+    // Remove todas as habilidades antigas do usuário
+    await promiseConn.query(
+      "DELETE FROM usuarios_habilidades WHERE id_usuario = ?",
+      [id_usuario]
+    );
+
+    // Insere as novas habilidades
+    for (const id_habilidade of habilidades) {
+      await promiseConn.query(
+        "INSERT INTO usuarios_habilidades (id_usuario, id_habilidade) VALUES (?, ?)",
+        [id_usuario, id_habilidade]
+      );
+    }
+    res.status(201).json({ mensagem: "Habilidades atualizadas com sucesso." });
+  } catch (err) {
+    console.error("Erro ao salvar habilidades:", err);
+    res.status(500).json({ erro: "Erro ao salvar habilidades." });
+  }
+};
+////////////////////
 exports.listarHabilidades = async (req, res) => {
   const id_usuario = parseInt(req.params.id);
 
