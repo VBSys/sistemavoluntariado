@@ -1,0 +1,35 @@
+img {
+    margin-top: 40px;
+    margin-left: 50px;
+    width: 220px;
+}
+
+
+a{
+    text-decoration: none;
+    display: inline;
+}
+
+a:hover {
+    color: rgb(49, 153, 49);
+}
+
+.container {
+    
+    width: 40%;
+    margin: 45px auto;
+    padding: 50px;
+    border: 2px solid #333;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+#titu_1{
+    text-align: center;
+    margin-top: 50px;
+}
+
+#btn_submit_1{
+    text-align: center;
+}
+
