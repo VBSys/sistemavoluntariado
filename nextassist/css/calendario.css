@@ -1,0 +1,123 @@
+  #img_logo {
+    margin-top: 35px;
+    margin-left: 50px;
+    width: 220px;
+}
+
+  
+  body {
+      background-color: #f9f9f9;
+    }
+
+
+    header .logo {
+      font-weight: 600;
+      font-size: 20px;
+    }
+
+    header nav a {
+      color: rgb(0, 0, 0);
+      margin: 0 10px;
+      text-decoration: none;
+    }
+
+    header .btn {
+      background-color: rgb(0, 0, 0);
+      color: rgb(255, 255, 255);
+      font-weight: 500;
+    }
+
+    h1 {
+      font-weight: 700;
+      margin: 40px 0 10px 0;
+      text-align: center;
+    }
+
+    .calendar-container {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    #calendar {
+      width: 700px;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      text-align: center;
+    }
+
+    .day {
+      padding: 10px;
+      border-radius: 8px;
+      background: #f5f5f5;
+      min-height: 80px;
+      position: relative;
+    }
+
+    .day.event {
+      background-color: #cde8ff;
+    }
+
+    .day strong {
+      display: block;
+      font-size: 16px;
+    }
+
+    .legend {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 250px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .legend h5 {
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .legend .color {
+      width: 15px;
+      height: 15px;
+      display: inline-block;
+      border-radius: 3px;
+      margin-right: 8px;
+    }
+
+    .forms {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+    }
+
+    .form-box {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 300px;
+      text-align: center;
+    }
+
+.container .row{
+    text-align: center;
+}
