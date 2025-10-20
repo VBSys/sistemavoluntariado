@@ -5,7 +5,6 @@ const path = require("path");
 const db = require("./config/db");
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
-
 const adminRoutes = require("./routes/adminRoutes");
 const voluntarioRoutes = require("./routes/voluntarioRoutes");
 const beneficiarioRoutes = require("./routes/beneficiarioRoutes");
@@ -22,9 +21,9 @@ const io = socketIo(server, {
     methods: ["GET", "POST"],
   },
 });
-
-// Socket.IO
 require("./socket")(io);
+app.use("/nextassist", express.static(path.join(__dirname, "../nextassist")));
+// Socket.IO
 
 //Inicializa as Routes
 app.use("/api/admin", adminRoutes);
@@ -65,7 +64,7 @@ app.use("/api/avaliacoes", avaliacaoRoutes);
 app.use("/api/denuncias", denunciaRoutes);
 
 // Middleware para arquivos estáticos (depois das rotas da API)
-app.use(express.static(path.join(__dirname, "../frontend")));
+app.use(express.static(path.join(__dirname, "../nextassist")));
 
 // Rota de teste de conexão
 app.get("/api/teste-conexao", (req, res) => {
@@ -81,10 +80,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ erro: "Erro interno do servidor" });
 });
 
+//Evento Routes
+const eventosRoutes = require("./routes/eventosRoutes");
+app.use("/api/eventos", eventosRoutes);
+
 // Inicializa o servidor
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });
-
-//

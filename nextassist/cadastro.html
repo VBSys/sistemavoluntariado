@@ -1,67 +1,131 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link rel="stylesheet" href="/css/style.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cadastro</title>
-</head>
-<body>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
 
-    <div><a href="/index.html"><img src="img/nexassist.png" alt=""></a></div>
-
-    <div>
-        <h1 id="titu_1">Cadastre-se</h1>
-    </div>
-    
-
-    <div class="container">
-
-        <form action="" method="post">
-            <div>
-                
-                
-                <div class="mb-3">
-                <label for="" class="form-label">Nome</label>
-                <input type="text" class="form-control" id="nome_input_1" placeholder="">
-                </div>
-
-                <div class="mb-3">
-                <label for="" class="form-label">E-mail</label>
-                <input type="email" class="form-control" id="email_input_2" placeholder="" required>
-                </div>
-
-                <div class="mb-3">
-                <label for="" class="form-label">Senha</label>
-                <input type="password" class="form-control" id="senha_input_2" placeholder="" required>
-                </div>
-
-                
-                <div class="mb-3">
-                    <label for="" class="form-label">Perfil</label>
-                        <select class="form-select" aria-label="">
-                        <option selected>Selecione</option>
-                        <option value="vol">Voluntário</option>
-                        <option value="ben">Beneficiario</option>
-                        </select required>
-                </div>
-
-
-                    <a href="/login.html">Já possui cadastro? Faça o Login.</a>
-           
-
-                <div id="btn_submit_1">
-                    <button class="btn btn-dark btn-lg" type="submit">Cadastre-se</button>
-                </div>
-
-            </div>
-        </form>
-
-
+  <body>
+    <div class="text-center my-4">
+      <a href="index.html"
+        ><img src="img/nexassist.png" alt="Logo NexAssist"
+      /></a>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+    <h1 id="titu_1">Cadastre-se</h1>
+
+    <div class="container form-box">
+      <form id="cadastroForm">
+        <div class="mb-3">
+          <label class="form-label">Nome</label>
+          <input
+            id="nome"
+            name="nome"
+            type="text"
+            class="form-control"
+            placeholder="Digite seu nome"
+            required
+          />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">E-mail</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            class="form-control"
+            placeholder="Digite seu e-mail"
+            required
+          />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Senha</label>
+          <input
+            id="senha"
+            name="senha"
+            type="password"
+            class="form-control"
+            placeholder="Digite sua senha"
+            required
+            minlength="6"
+          />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Perfil</label>
+          <select id="perfil" class="form-select" required>
+            <option value="">Selecione</option>
+            <!-- Ajuste os valores conforme id_tipo no seu banco: 1 = voluntário, 2 = beneficiário, 3 = admin -->
+            <option value="1">Voluntário</option>
+            <option value="2">Beneficiário</option>
+          </select>
+        </div>
+
+        <p><a href="login.html">Já possui cadastro? Faça o login.</a></p>
+
+        <div id="btn_submit_1">
+          <button class="btn btn-dark btn-lg" type="submit">Cadastre-se</button>
+        </div>
+
+        <div id="msg" class="mt-3"></div>
+      </form>
+    </div>
+
+    <script>
+      document
+        .getElementById("cadastroForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const nome_completo = document.getElementById("nome").value.trim();
+          const email = document.getElementById("email").value.trim();
+          const senha = document.getElementById("senha").value;
+          const id_tipo = document.getElementById("perfil").value;
+
+          const msgEl = document.getElementById("msg");
+          msgEl.textContent = "";
+          msgEl.className = "";
+
+          if (!nome_completo || !email || !senha || !id_tipo) {
+            msgEl.textContent = "Preencha todos os campos.";
+            msgEl.className = "text-danger";
+            return;
+          }
+
+          try {
+            const res = await fetch("http://localhost:3000/api/usuarios", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ nome_completo, email, senha, id_tipo }),
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+              msgEl.textContent =
+                data.mensagem || "Cadastro realizado com sucesso.";
+              msgEl.className = "text-success";
+              setTimeout(() => {
+                window.location.href = "login.html";
+              }, 1500);
+            } else {
+              msgEl.textContent = data.erro || JSON.stringify(data);
+              msgEl.className = "text-danger";
+            }
+          } catch (err) {
+            msgEl.textContent = "Erro de conexão: " + err.message;
+            msgEl.className = "text-danger";
+          }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
   </body>
-</body>
 </html>

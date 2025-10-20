@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/nextassist/css/style.css">
     <title>Login</title>
 </head>
 <body>
@@ -42,6 +42,48 @@
 
 
     </div>
+
+    <script>
+    document.getElementById('cadastroForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const nome_completo = document.getElementById('nome').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const senha = document.getElementById('senha').value;
+      const id_tipo = document.getElementById('id_tipo').value;
+
+      const msgEl = document.getElementById('msg');
+      msgEl.textContent = '';
+
+      if (!nome_completo || !email || !senha || !id_tipo) {
+        msgEl.textContent = 'Preencha todos os campos.';
+        msgEl.className = 'text-danger';
+        return;
+      }
+
+      try {
+        const res = await fetch('http://localhost:3000/api/usuarios', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nome_completo, email, senha, id_tipo })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          msgEl.textContent = data.mensagem || 'Cadastro realizado com sucesso.';
+          msgEl.className = 'text-success';
+          // redireciona para login após 1.5s
+          setTimeout(() => { window.location.href = '/nextassist/login.html'; }, 1500);
+        } else {
+          msgEl.textContent = data.erro || JSON.stringify(data);
+          msgEl.className = 'text-danger';
+        }
+      } catch (err) {
+        msgEl.textContent = 'Erro de conexão: ' + err.message;
+        msgEl.className = 'text-danger';
+      }
+    });
+  </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
   </body>

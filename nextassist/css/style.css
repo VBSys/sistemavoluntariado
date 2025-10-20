@@ -1,35 +1,55 @@
+/* --- LOGO --- */
+#img_logo,
 img {
-    margin-top: 40px;
-    margin-left: 50px;
-    width: 220px;
+  width: 220px;
+  height: auto;
 }
 
-
-a{
-    text-decoration: none;
-    display: inline;
+/* --- LINKS --- */
+a {
+  text-decoration: none;
+  color: inherit;
 }
 
 a:hover {
-    color: rgb(49, 153, 49);
+  color: rgb(49, 153, 49);
 }
 
-.container {
-    
-    width: 40%;
-    margin: 45px auto;
-    padding: 50px;
-    border: 2px solid #333;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+/* --- TÍTULO --- */
+#titu_1 {
+  text-align: center;
+  margin-top: 40px;
+  margin-bottom: 30px;
 }
 
-#titu_1{
-    text-align: center;
-    margin-top: 50px;
+/* --- CONTAINER DOS FORMULÁRIOS --- */
+.form-box {
+  max-width: 500px;
+  background: #fff;
+  padding: 40px;
+  border: 2px solid #333;
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
 }
 
-#btn_submit_1{
-    text-align: center;
+/* --- BOTÃO --- */
+#btn_submit_1 {
+  text-align: center;
+  margin-top: 20px;
 }
 
+/* --- RODAPÉ --- */
+.footer {
+  position: relative;
+  bottom: 0;
+  width: 100%;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.footer img {
+  filter: brightness(0) invert(1); /* deixa o logo branco */
+}
+
+.footer a:hover {
+  color: rgb(49, 153, 49);
+}
