@@ -8,7 +8,6 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const adminRoutes = require("./routes/adminRoutes");
 const voluntarioRoutes = require("./routes/voluntarioRoutes");
 const beneficiarioRoutes = require("./routes/beneficiarioRoutes");
-//
 
 // Inicializa o Express
 const app = express();
@@ -84,8 +83,12 @@ app.use((err, req, res, next) => {
 const eventosRoutes = require("./routes/eventosRoutes");
 app.use("/api/eventos", eventosRoutes);
 
+//Perfil Routes
+const perfilRoutes = require("./routes/perfilRoutes");
+app.use("/api/perfil", perfilRoutes);
+
 // Inicializa o servidor
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });

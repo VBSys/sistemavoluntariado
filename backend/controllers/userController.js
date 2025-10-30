@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 
 // Garante que o JWT_SECRET sempre tenha valor
-const JWT_SECRET = process.env.JWT_SECRET || "sua_chave_secreta";
+const JWT_SECRET = process.env.JWT_SECRET || "nexassist_jwt_secret_key_2025";
 const bcrypt = require("bcrypt");
 const db = require("../config/db");
 
@@ -137,6 +137,7 @@ exports.loginUsuario = (req, res) => {
 
       res.json({
         token,
+        tipo_usuario: usuario.id_tipo,
         usuario: {
           id: usuario.id_usuario,
           nome_completo: usuario.nome_completo,
