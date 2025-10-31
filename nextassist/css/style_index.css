@@ -1,5 +1,5 @@
 #img_logo {
-    margin-top: 10px;
+    margin-top: 35px;
     margin-left: 50px;
     width: 220px;
 }
@@ -12,15 +12,20 @@ a{
 
 
 
+
 a:hover {
     color: rgb(49, 153, 49);
 }
 
 .container {
+    margin: 35px auto;
+    padding: 15px;
     text-align: center;
-    width: 100%;
-    margin: 45px auto;
-    padding: 50px;
+
+}
+
+.container .row{
+    text-align: center;
 }
 
 #titu_1{

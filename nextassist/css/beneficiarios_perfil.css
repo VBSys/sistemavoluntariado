@@ -1,0 +1,113 @@
+#img_logo {
+    margin-top: 35px;
+    margin-left: 50px;
+    width: 220px;
+}
+
+
+a{
+    text-decoration: none;
+    display: inline;
+}
+
+
+
+
+a:hover {
+    color: rgb(49, 153, 49);
+}
+
+.circle-btn {
+      width: 90px;
+      height:90px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.0rem;
+      border: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+.circle-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .btn-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px; /* espaço entre os botões */
+    }
+
+
+
+.container .row{
+  margin-top: 15px;
+    text-align: center;
+}
+
+
+
+.titu_1{
+    padding-right: 50px;
+    margin-top: 15px;
+}
+
+#btn_submit_1{
+    text-align: center;
+}
+
+
+#main_page{
+    margin-bottom: 25px;
+}
+
+
+/* ******************************************** */
+/* CSS REFERENTE AO CONTAINER DE DENUNCIAS */
+/* ******************************************** */
+
+    .titulo {
+    text-align: center;
+      font-weight: 800;
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+
+
+    .scroll-container {
+      text-align: left;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      height: 35rem; 
+
+    }
+
+
+    .denuncia {
+      background-color: #f1f1f1;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: inset 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    .form-control {
+      background-color: #d3d3d3;
+    }
+
+    .descricao {
+      resize: none;
+      height: 150px;
+      overflow-y: auto;
+    }
+
+  
+/* ******************* */
+
+.btn-chat{
+  margin-top: 15px;
+}

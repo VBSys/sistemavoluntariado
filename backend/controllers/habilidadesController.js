@@ -1,10 +1,21 @@
 const connection = require("../config/db");
 const promiseConn = connection.promise();
 
+// Helper para escolher a tabela de perfil com base no tipo de usuário
+async function tabelaPerfilParaUsuario(id_usuario) {
+  const [rows] = await promiseConn.query(
+    "SELECT id_tipo FROM usuarios WHERE id_usuario = ?",
+    [id_usuario]
+  );
+  const user = rows[0];
+  if (!user) return null;
+  return user.id_tipo === 1 ? "perfil_voluntario" : "perfil_beneficiario";
+}
+
 exports.cadastrarHabilidades = async (req, res) => {
   const { habilidades } = req.body;
-  const id_usuario = parseInt(req.params.id);
-  console.log(habilidades, id_usuario);
+  const id_usuario = parseInt(req.params.id, 10);
+
   if (req.user.id !== id_usuario) {
     return res
       .status(403)
@@ -16,21 +27,36 @@ exports.cadastrarHabilidades = async (req, res) => {
   }
 
   try {
-    console.log("Olá");
-    const [rows] = await promiseConn.query(
-      "SELECT id_usuario FROM usuarios_habilidades WHERE id_usuario = ?",
-      [id_usuario]
-    );
+    const tabela = await tabelaPerfilParaUsuario(id_usuario);
+    if (!tabela)
+      return res.status(404).json({ erro: "Usuário não encontrado" });
 
-    console.log(rows);
-    console.log("Olá2");
-    for (const id_habilidade of habilidades) {
+    // Remove registros antigos desse usuário na tabela de perfil
+    await promiseConn.query(`DELETE FROM ${tabela} WHERE id_usuario = ?`, [
+      id_usuario,
+    ]);
+
+    // Insere novas linhas de perfil, com descricao NULL e id_necessidade setado
+    for (let hab of habilidades) {
+      let id_habilidade = null;
+      if (typeof hab === "number") {
+        id_habilidade = hab;
+      } else if (typeof hab === "string") {
+        const [hrows] = await promiseConn.query(
+          "SELECT id_habilidade FROM habilidades WHERE nome_habilidade = ? LIMIT 1",
+          [hab]
+        );
+        if (hrows && hrows[0]) id_habilidade = hrows[0].id_habilidade;
+      }
+
+      if (!id_habilidade) continue; // pula se não encontrou
+
       await promiseConn.query(
-        "INSERT INTO usuarios_habilidades (id_usuario, id_habilidade) VALUES (?, ?)",
+        `INSERT INTO ${tabela} (id_usuario, descricao, id_necessidade) VALUES (?, NULL, ?)`,
         [id_usuario, id_habilidade]
       );
     }
-    console.log("Olá3");
+
     res.status(201).json({ mensagem: "Habilidades atualizadas com sucesso." });
   } catch (err) {
     console.error("Erro ao salvar habilidades:", err);
@@ -40,49 +66,24 @@ exports.cadastrarHabilidades = async (req, res) => {
 
 /////////////////////
 exports.editarHabilidades = async (req, res) => {
-  const { habilidades } = req.body;
-  const id_usuario = parseInt(req.params.id);
-  console.log(habilidades, id_usuario);
-  if (req.user.id !== id_usuario) {
-    return res
-      .status(403)
-      .json({ erro: "Você só pode editar seu próprio perfil." });
-  }
-
-  if (!Array.isArray(habilidades) || habilidades.length > 3) {
-    return res.status(400).json({ erro: "Máximo de 3 habilidades permitido." });
-  }
-
-  try {
-    // Remove todas as habilidades antigas do usuário
-    await promiseConn.query(
-      "DELETE FROM usuarios_habilidades WHERE id_usuario = ?",
-      [id_usuario]
-    );
-
-    // Insere as novas habilidades
-    for (const id_habilidade of habilidades) {
-      await promiseConn.query(
-        "INSERT INTO usuarios_habilidades (id_usuario, id_habilidade) VALUES (?, ?)",
-        [id_usuario, id_habilidade]
-      );
-    }
-    res.status(201).json({ mensagem: "Habilidades atualizadas com sucesso." });
-  } catch (err) {
-    console.error("Erro ao salvar habilidades:", err);
-    res.status(500).json({ erro: "Erro ao salvar habilidades." });
-  }
+  // Comportamento idêntico a cadastrarHabilidades (substitui todas)
+  return exports.cadastrarHabilidades(req, res);
 };
+
 ////////////////////
 exports.listarHabilidades = async (req, res) => {
-  const id_usuario = parseInt(req.params.id);
+  const id_usuario = parseInt(req.params.id, 10);
 
   try {
+    const tabela = await tabelaPerfilParaUsuario(id_usuario);
+    if (!tabela)
+      return res.status(404).json({ erro: "Usuário não encontrado" });
+
     const [rows] = await promiseConn.query(
-      `SELECT h.id_habilidade, h.nome_habilidade
-       FROM usuarios_habilidades uh
-       JOIN habilidades h ON uh.id_habilidade = h.id_habilidade
-       WHERE uh.id_usuario = ?`,
+      `SELECT p.id_necessidade AS id_habilidade, h.nome_habilidade
+       FROM ${tabela} p
+       JOIN habilidades h ON p.id_necessidade = h.id_habilidade
+       WHERE p.id_usuario = ?`,
       [id_usuario]
     );
 

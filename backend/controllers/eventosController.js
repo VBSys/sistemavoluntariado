@@ -8,6 +8,7 @@ exports.criarEvento = async (req, res) => {
     hora_inicio,
     hora_fim,
     local,
+    participantes = [], // array de {id_usuario, tipo} (1=voluntário, 2=beneficiário)
   } = req.body;
 
   if (!titulo_evento || !data_evento) {
@@ -15,9 +16,13 @@ exports.criarEvento = async (req, res) => {
   }
 
   try {
+    // Extrai os IDs dos participantes do array (assume primeiro voluntário e primeiro beneficiário)
+    const voluntario = participantes.find((p) => p.tipo === 1);
+    const beneficiario = participantes.find((p) => p.tipo === 2);
+
     const [result] = await db.promise().query(
-      `INSERT INTO eventos_voluntariado (titulo_evento, descricao_evento, data_evento, hora_inicio, hora_fim, local)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO eventos_voluntariado (titulo_evento, descricao_evento, data_evento, hora_inicio, hora_fim, local, id_voluntario, id_beneficiario)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         titulo_evento,
         descricao_evento || null,
@@ -25,64 +30,19 @@ exports.criarEvento = async (req, res) => {
         hora_inicio || null,
         hora_fim || null,
         local || null,
+        voluntario ? voluntario.id_usuario : null,
+        beneficiario ? beneficiario.id_usuario : null,
       ]
     );
 
     const eventId = result.insertId;
 
-    // Se houver usuário autenticado e for voluntário ou beneficiário, crie também uma participação
-    try {
-      const creatorId = req.user ? req.user.id : null;
-      const creatorTipo = req.user ? req.user.id_tipo : null;
-
-      if (creatorId && (creatorTipo === 1 || creatorTipo === 2)) {
-        // Monta dinamicamente colunas e valores, para não inserir colunas nulas
-        const cols = ["id_evento"];
-        const placeholders = ["?"];
-        const values = [eventId];
-
-        if (creatorTipo === 1) {
-          cols.push("id_voluntario");
-          placeholders.push("?");
-          values.push(creatorId);
-        } else if (creatorTipo === 2) {
-          cols.push("id_beneficiario");
-          placeholders.push("?");
-          values.push(creatorId);
-        }
-
-        // log SQL e valores para diagnóstico (remover em produção se necessário)
-        console.log("SQL participacao:", sql);
-        console.log("Valores participacao:", values);
-        cols.push("status");
-        placeholders.push("?");
-        values.push("confirmado");
-
-        const sql = `INSERT INTO participacoes_evento (${cols.join(
-          ", "
-        )}) VALUES (${placeholders.join(", ")})`;
-
-        const [partResult] = await db.promise().query(sql, values);
-
-        return res.status(201).json({
-          mensagem: "Evento criado com sucesso",
-          id: eventId,
-          participacao_id: partResult.insertId,
-        });
-      }
-
-      // Se não há usuário autenticado ou é admin, apenas retorna o evento criado
-      return res
-        .status(201)
-        .json({ mensagem: "Evento criado com sucesso", id: eventId });
-    } catch (errPart) {
-      console.error("Erro ao criar participação do evento:", errPart);
-      return res.status(201).json({
-        mensagem:
-          "Evento criado, porém falhou ao registrar participação do criador",
-        id: eventId,
-      });
-    }
+    return res.status(201).json({
+      mensagem: "Evento criado com sucesso",
+      id: eventId,
+      id_voluntario: voluntario ? voluntario.id_usuario : null,
+      id_beneficiario: beneficiario ? beneficiario.id_usuario : null,
+    });
   } catch (err) {
     console.error("Erro ao criar evento:", err);
     res.status(500).json({ erro: "Erro interno ao criar evento." });

@@ -7,6 +7,7 @@ const horasRoutes = require("./routes/horasRoutes");
 const avaliacaoRoutes = require("./routes/avaliacaoRoutes");
 const denunciaRoutes = require("./routes/denunciaRoutes");
 const tipoUsuarioRoutes = require("./routes/tipoUsuarioRoutes");
+const perfilRoutes = require("./routes/perfilRoutes");
 
 app.use("/api/tipos-usuario", tipoUsuarioRoutes);
 
@@ -19,5 +20,8 @@ app.use("/api/horas", horasRoutes);
 app.use("/api/avaliacoes", avaliacaoRoutes);
 app.use("/api/denuncias", denunciaRoutes);
 app.use("/denuncias", denunciaRoutes);
+
+//perfil
+app.use("/api/perfil", perfilRoutes);
 
 app.listen(3000, () => console.log("API rodando na porta 3000"));
