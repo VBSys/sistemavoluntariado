@@ -50,11 +50,35 @@ exports.criarDenuncia = (req, res) => {
 };
 // Listar todas as denúncias (GET /denuncias) - apenas admin futuramente
 exports.listarDenuncias = (req, res) => {
-  db.query("SELECT * FROM denuncias", (err, results) => {
+  const { pagina = 1, limite = 10 } = req.query;
+
+  const offset = (pagina - 1) * limite;
+
+  const query = `
+    SELECT 
+      id_denuncia,
+      id_usuario,
+      id_evento,
+      motivo,
+      descricao,
+      status,
+      data_denuncia
+    FROM denuncias
+    ORDER BY data_denuncia DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  db.query(query, [parseInt(limite), parseInt(offset)], (err, resultado) => {
     if (err) {
-      console.error("Erro ao buscar denúncias:", err);
-      return res.status(500).json({ erro: "Erro ao listar denúncias." });
+      console.error("❌ Erro ao listar denúncias:", err.message);
+      return res.status(500).json({ erro: "Erro ao buscar denúncias" });
     }
-    res.json(results);
+
+    res.json({
+      pagina: parseInt(pagina),
+      limite: parseInt(limite),
+      total: resultado.length,
+      denuncias: resultado,
+    });
   });
 };

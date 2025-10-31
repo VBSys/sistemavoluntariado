@@ -18,5 +18,6 @@ app.use("/api/usuarios", userRoutes);
 app.use("/api/horas", horasRoutes);
 app.use("/api/avaliacoes", avaliacaoRoutes);
 app.use("/api/denuncias", denunciaRoutes);
+app.use("/denuncias", denunciaRoutes);
 
 app.listen(3000, () => console.log("API rodando na porta 3000"));

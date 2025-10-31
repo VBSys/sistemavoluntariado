@@ -8,7 +8,7 @@ const swaggerJsdoc = require("swagger-jsdoc");
 const adminRoutes = require("./routes/adminRoutes");
 const voluntarioRoutes = require("./routes/voluntarioRoutes");
 const beneficiarioRoutes = require("./routes/beneficiarioRoutes");
-//
+const certificadoRoutes = require("./routes/certificadoRoutes");
 
 // Inicializa o Express
 const app = express();
@@ -29,6 +29,7 @@ app.use("/nextassist", express.static(path.join(__dirname, "../nextassist")));
 app.use("/api/admin", adminRoutes);
 app.use("/api/voluntario", voluntarioRoutes);
 app.use("/api/beneficiario", beneficiarioRoutes);
+app.use("/api/certificados", certificadoRoutes);
 
 // Middleware para JSON e arquivos estáticos
 app.use(express.json());

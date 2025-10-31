@@ -67,12 +67,12 @@ exports.buscarUsuarioPorId = (req, res) => {
 //
 
 exports.criarUsuario = async (req, res) => {
-  const { nome_completo, email, senha, id_tipo } = req.body;
+  const { nome_completo, email, senha, id_usuario} = req.body;
 
-  if (!nome_completo || !email || !senha || !id_tipo) {
+  if (!nome_completo || !email || !senha || !id_usuario) {
     return res.status(400).json({
       erro: "Campos obrigatórios ausentes",
-      detalhes: "nome_completo, email, senha e id_tipo são obrigatórios",
+      detalhes: "nome_completo, email, senha e id_usuario são obrigatórios",
     });
   }
 
@@ -80,13 +80,13 @@ exports.criarUsuario = async (req, res) => {
     const senhaCriptografada = await bcrypt.hash(senha, 10);
 
     const query = `
-        INSERT INTO usuarios (nome_completo, email, senha, id_tipo)
+        INSERT INTO usuarios (nome_completo, email, senha, id_usuario)
         VALUES (?, ?, ?, ?)
       `;
 
     db.query(
       query,
-      [nome_completo, email, senhaCriptografada || null, id_tipo],
+      [nome_completo, email, senhaCriptografada || null, id_usuario],
       (err, result) => {
         if (err) {
           console.log("ola2");
@@ -112,40 +112,55 @@ exports.criarUsuario = async (req, res) => {
 exports.loginUsuario = (req, res) => {
   const { email, senha } = req.body;
 
-  db.query(
-    "SELECT u.id_usuario, u.nome_completo, u.email, u.senha, u.id_tipo FROM usuarios u WHERE u.email = ?",
-    [email],
-    async (err, results) => {
-      if (err) return res.status(500).json({ erro: err.message });
-      if (results.length === 0)
-        return res.status(401).json({ erro: "Usuário não encontrado" });
+  const query = `
+    SELECT 
+      u.id_usuario,
+      u.nome_completo,
+      u.email,
+      u.senha,
+      u.id_tipo
+    FROM usuarios u
+    WHERE u.email = ?
+    LIMIT 1
+  `;
 
-      const usuario = results[0];
-      const senhaValida = await bcrypt.compare(senha, usuario.senha);
+  db.query(query, [email], async (err, results) => {
+    if (err) return res.status(500).json({ erro: err.message });
+    if (results.length === 0)
+      return res.status(401).json({ erro: "Usuário não encontrado" });
 
-      if (!senhaValida)
-        return res.status(401).json({ erro: "Senha incorreta" });
+    const usuario = results[0];
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
-      const token = jwt.sign(
-        {
-          id: usuario.id_usuario,
-          id_tipo: usuario.id_tipo,
-        },
-        JWT_SECRET,
-        { expiresIn: "2h" }
-      );
+    if (!senhaValida)
+      return res.status(401).json({ erro: "Senha incorreta" });
 
-      res.json({
-        token,
-        usuario: {
-          id: usuario.id_usuario,
-          nome_completo: usuario.nome_completo,
-          id_tipo: usuario.id_tipo,
-        },
-      });
-    }
-  );
+    // 🔑 Gera o token com os campos necessários
+    const token = jwt.sign(
+      {
+        id_usuario: usuario.id_usuario,
+        id_tipo: usuario.id_tipo,
+        email: usuario.email,
+        nome_completo: usuario.nome_completo,
+      },
+      JWT_SECRET,
+      { expiresIn: "2h" }
+    );
+
+    // 🔁 Retorna o token e os dados do usuário
+    res.json({
+      mensagem: "Login realizado com sucesso!",
+      token,
+      usuario: {
+        id_usuario: usuario.id_usuario,
+        nome_completo: usuario.nome_completo,
+        email: usuario.email,
+        id_tipo: usuario.id_tipo,
+      },
+    });
+  });
 };
+
 
 //
 // 📌 Retornar dados do usuário logado (usando token)
