@@ -1,53 +1,48 @@
 const db = require("../config/db");
 
 // Criar denúncia (POST /denuncias)
+// Requer autenticação (middleware `autenticar`) — o `id_usuario` vem do token
 exports.criarDenuncia = (req, res) => {
-  const {
-    id_usuario, // quem está denunciando
-    id_evento, // evento relacionado (opcional)
-    motivo,
-    descricao,
-    status = "pendente", // valor padrão
-    email_denunciado, // quem está sendo denunciado
-  } = req.body;
+  const { email_destinatario, motivo, descricao } = req.body;
 
-  if (!id_usuario || !motivo || !email_denunciado) {
-    return res.status(400).json({
-      erro: "Campos obrigatórios ausentes",
-      detalhes: "id_usuario, motivo e email_denunciado são obrigatórios",
-    });
+  if (!email_destinatario || !motivo || !descricao) {
+    return res.status(400).json({ erro: "Todos os campos são obrigatórios" });
   }
 
-  const query = `
-    INSERT INTO denuncias (id_usuario, id_evento, motivo, descricao, status, email_denunciado)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `;
-
+  // Buscar o ID do destinatário pelo e-mail
   db.query(
-    query,
-    [
-      id_usuario,
-      id_evento || null,
-      motivo,
-      descricao || null,
-      status,
-      email_denunciado,
-    ],
-    (err, result) => {
-      if (err) {
-        console.error("Erro ao salvar denúncia:", err);
+    "SELECT id_usuario FROM usuarios WHERE email = ?",
+    [email_destinatario],
+    (err, results) => {
+      if (err)
+        return res.status(500).json({ erro: "Erro ao buscar destinatário" });
+      if (results.length === 0)
         return res
-          .status(500)
-          .json({ erro: "Erro interno ao criar denúncia." });
-      }
+          .status(404)
+          .json({ erro: "Usuário destinatário não encontrado" });
 
-      res.status(201).json({
-        mensagem: "Denúncia registrada com sucesso",
-        id: result.insertId,
-      });
+      const id_destinatario = results[0].id_usuario;
+
+      // Inserir denúncia
+      const sql = `
+      INSERT INTO denuncias (id_remetente, id_destinatario, motivo, descricao, status, email_denunciante)
+      VALUES (?, ?, ?, ?, 'pendente', (SELECT email FROM usuarios WHERE id_usuario = ?))
+    `;
+
+      db.query(
+        sql,
+        [id_remetente, id_destinatario, motivo, descricao, id_remetente],
+        (err2) => {
+          if (err2)
+            return res.status(500).json({ erro: "Erro ao registrar denúncia" });
+
+          res.status(201).json({ mensagem: "Denúncia registrada com sucesso" });
+        }
+      );
     }
   );
 };
+
 // Listar todas as denúncias (GET /denuncias) - apenas admin futuramente
 exports.listarDenuncias = (req, res) => {
   const { pagina = 1, limite = 10 } = req.query;
@@ -57,7 +52,6 @@ exports.listarDenuncias = (req, res) => {
   const query = `
     SELECT 
       id_denuncia,
-      id_usuario,
       id_evento,
       motivo,
       descricao,

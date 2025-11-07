@@ -1,10 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const denunciaController = require("../controllers/denunciaController");
-
+const { autenticar } = require("../middlewares/auth");
 // Criar denúncia
-router.post("/", denunciaController.criarDenuncia);
-
+router.post("/", autenticar, denunciaController.criarDenuncia);
 // Listar todas as denúncias
 router.get("/", denunciaController.listarDenuncias);
 

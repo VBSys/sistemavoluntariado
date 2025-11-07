@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 
-// Usa a mesma chave secreta do controller
-const JWT_SECRET = process.env.JWT_SECRET || "sua_chave_secreta";
+// Usa a mesma chave secreta do controller (fallback compatível)
+const JWT_SECRET = process.env.JWT_SECRET || "nexassist_jwt_secret_key_2025";
 
 // Middleware de autenticação
 function autenticar(req, res, next) {

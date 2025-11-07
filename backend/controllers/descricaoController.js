@@ -1,77 +1,55 @@
-const connection = require("../config/db");
-const promiseConn = connection.promise();
+const db = require("../config/db");
 
-// Helper para escolher a tabela de perfil com base no tipo de usuário
-async function tabelaPerfilParaUsuario(id_usuario) {
-  const [rows] = await promiseConn.query(
-    "SELECT id_tipo FROM usuarios WHERE id_usuario = ?",
-    [id_usuario]
-  );
-  const user = rows[0];
-  if (!user) return null;
-  return user.id_tipo === 1 ? "perfil_voluntario" : "perfil_beneficiario";
-}
-
-exports.cadastrarDescricao = async (req, res) => {
+exports.cadastrarDescricao = (req, res) => {
+  const { id } = req.params; // id_usuario
   const { descricao } = req.body;
-  const id_usuario = parseInt(req.params.id, 10);
 
-  if (!req.user || req.user.id !== id_usuario) {
-    return res
-      .status(403)
-      .json({ erro: "Você só pode editar seu próprio perfil." });
-  }
+  if (!id)
+    return res.status(400).json({ erro: "id do usuário ausente na URL" });
+  if (!descricao)
+    return res.status(400).json({ erro: "descricao ausente no body" });
 
-  if (typeof descricao !== "string") {
-    return res
-      .status(400)
-      .json({ erro: "Campo 'descricao' deve ser uma string" });
-  }
+  db.query(
+    "SELECT id_perfil FROM perfil WHERE id_usuario = ?",
+    [id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ erro: err.message });
 
-  try {
-    const tabela = await tabelaPerfilParaUsuario(id_usuario);
-    if (!tabela)
-      return res.status(404).json({ erro: "Usuário não encontrado" });
-
-    // Tenta atualizar uma linha existente
-    const [updateResult] = await promiseConn.query(
-      `UPDATE ${tabela} SET descricao = ? WHERE id_usuario = ?`,
-      [descricao.trim(), id_usuario]
-    );
-
-    // Se não havia registro, cria um novo (id_necessidade NULL)
-    if (updateResult.affectedRows === 0) {
-      await promiseConn.query(
-        `INSERT INTO ${tabela} (id_usuario, descricao, id_necessidade) VALUES (?, ?, NULL)`,
-        [id_usuario, descricao.trim()]
-      );
+      if (rows.length === 0) {
+        const sql = `INSERT INTO perfil (id_usuario, descricao) VALUES (?, ?)`;
+        db.query(sql, [id, descricao], (err2, result) => {
+          if (err2) return res.status(500).json({ erro: err2.message });
+          return res
+            .status(201)
+            .json({
+              mensagem: "Descrição cadastrada",
+              id_perfil: result.insertId,
+            });
+        });
+      } else {
+        const sql = `UPDATE perfil SET descricao = ? WHERE id_usuario = ?`;
+        db.query(sql, [descricao, id], (err3) => {
+          if (err3) return res.status(500).json({ erro: err3.message });
+          return res.json({ mensagem: "Descrição atualizada" });
+        });
+      }
     }
-
-    return res
-      .status(201)
-      .json({ mensagem: "Descrição atualizada com sucesso." });
-  } catch (err) {
-    console.error("Erro ao salvar descricao:", err);
-    return res.status(500).json({ erro: "Erro ao salvar descricao." });
-  }
+  );
 };
 
-// Lista descrições do usuário (retorna array para compatibilidade)
-exports.listarDescricao = async (req, res) => {
-  const id_usuario = parseInt(req.params.id, 10);
-  try {
-    const tabela = await tabelaPerfilParaUsuario(id_usuario);
-    if (!tabela)
-      return res.status(404).json({ erro: "Usuário não encontrado" });
+exports.listarDescricao = (req, res) => {
+  const { id } = req.params;
+  if (!id)
+    return res.status(400).json({ erro: "id do usuário ausente na URL" });
 
-    const [rows] = await promiseConn.query(
-      `SELECT descricao FROM ${tabela} WHERE id_usuario = ?`,
-      [id_usuario]
-    );
-    const descricoes = rows.map((r) => r.descricao).filter(Boolean);
-    res.json({ id_usuario, descricoes });
-  } catch (err) {
-    console.error("Erro ao buscar descricao:", err);
-    res.status(500).json({ erro: "Erro ao buscar descricao." });
-  }
+  db.query(
+    "SELECT descricao FROM perfil WHERE id_usuario = ?",
+    [id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ erro: err.message });
+      if (rows.length === 0)
+        return res.status(404).json({ erro: "Perfil não encontrado" });
+      return res.json(rows[0]);
+    }
+  );
 };

@@ -1,95 +1,75 @@
-const connection = require("../config/db");
-const promiseConn = connection.promise();
+const db = require("../config/db");
 
-// Helper para escolher a tabela de perfil com base no tipo de usuário
-async function tabelaPerfilParaUsuario(id_usuario) {
-  const [rows] = await promiseConn.query(
-    "SELECT id_tipo FROM usuarios WHERE id_usuario = ?",
-    [id_usuario]
-  );
-  const user = rows[0];
-  if (!user) return null;
-  return user.id_tipo === 1 ? "perfil_voluntario" : "perfil_beneficiario";
-}
+// Cadastrar ou atualizar habilidades do usuário (id no path)
+exports.cadastrarHabilidades = (req, res) => {
+  const { id } = req.params; // id_usuario
+  const { habilidade_1, habilidade_2, habilidade_3 } = req.body;
 
-exports.cadastrarHabilidades = async (req, res) => {
-  const { habilidades } = req.body;
-  const id_usuario = parseInt(req.params.id, 10);
+  if (!id)
+    return res.status(400).json({ erro: "id do usuário ausente na URL" });
 
-  if (req.user.id !== id_usuario) {
-    return res
-      .status(403)
-      .json({ erro: "Você só pode editar seu próprio perfil." });
-  }
+  // Verifica se já existe perfil
+  db.query(
+    "SELECT id_perfil FROM perfil WHERE id_usuario = ?",
+    [id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ erro: err.message });
 
-  if (!Array.isArray(habilidades) || habilidades.length > 3) {
-    return res.status(400).json({ erro: "Máximo de 3 habilidades permitido." });
-  }
-
-  try {
-    const tabela = await tabelaPerfilParaUsuario(id_usuario);
-    if (!tabela)
-      return res.status(404).json({ erro: "Usuário não encontrado" });
-
-    // Remove registros antigos desse usuário na tabela de perfil
-    await promiseConn.query(`DELETE FROM ${tabela} WHERE id_usuario = ?`, [
-      id_usuario,
-    ]);
-
-    // Insere novas linhas de perfil, com descricao NULL e id_necessidade setado
-    for (let hab of habilidades) {
-      let id_habilidade = null;
-      if (typeof hab === "number") {
-        id_habilidade = hab;
-      } else if (typeof hab === "string") {
-        const [hrows] = await promiseConn.query(
-          "SELECT id_habilidade FROM habilidades WHERE nome_habilidade = ? LIMIT 1",
-          [hab]
+      if (rows.length === 0) {
+        // Inserir
+        const sql = `INSERT INTO perfil (id_usuario, habilidade_1, habilidade_2, habilidade_3) VALUES (?, ?, ?, ?)`;
+        db.query(
+          sql,
+          [
+            id,
+            habilidade_1 || null,
+            habilidade_2 || null,
+            habilidade_3 || null,
+          ],
+          (err2, result) => {
+            if (err2) return res.status(500).json({ erro: err2.message });
+            return res.status(201).json({
+              mensagem: "Habilidades cadastradas",
+              id_perfil: result.insertId,
+            });
+          }
         );
-        if (hrows && hrows[0]) id_habilidade = hrows[0].id_habilidade;
+      } else {
+        // Atualizar
+        const sql = `UPDATE perfil SET habilidade_1 = ?, habilidade_2 = ?, habilidade_3 = ? WHERE id_usuario = ?`;
+        db.query(
+          sql,
+          [
+            habilidade_1 || null,
+            habilidade_2 || null,
+            habilidade_3 || null,
+            id,
+          ],
+          (err3) => {
+            if (err3) return res.status(500).json({ erro: err3.message });
+            return res.json({ mensagem: "Habilidades atualizadas" });
+          }
+        );
       }
-
-      if (!id_habilidade) continue; // pula se não encontrou
-
-      await promiseConn.query(
-        `INSERT INTO ${tabela} (id_usuario, descricao, id_necessidade) VALUES (?, NULL, ?)`,
-        [id_usuario, id_habilidade]
-      );
     }
-
-    res.status(201).json({ mensagem: "Habilidades atualizadas com sucesso." });
-  } catch (err) {
-    console.error("Erro ao salvar habilidades:", err);
-    res.status(500).json({ erro: "Erro ao salvar habilidades." });
-  }
+  );
 };
 
-/////////////////////
-exports.editarHabilidades = async (req, res) => {
-  // Comportamento idêntico a cadastrarHabilidades (substitui todas)
+exports.listarHabilidades = (req, res) => {
+  const { id } = req.params;
+  if (!id)
+    return res.status(400).json({ erro: "id do usuário ausente na URL" });
+
+  const sql = `SELECT habilidade_1, habilidade_2, habilidade_3 FROM perfil WHERE id_usuario = ?`;
+  db.query(sql, [id], (err, rows) => {
+    if (err) return res.status(500).json({ erro: err.message });
+    if (rows.length === 0)
+      return res.status(404).json({ erro: "Perfil não encontrado" });
+    return res.json(rows[0]);
+  });
+};
+
+exports.editarHabilidades = (req, res) => {
+  // Reusa cadastrarHabilidades -> atualiza se existir
   return exports.cadastrarHabilidades(req, res);
-};
-
-////////////////////
-exports.listarHabilidades = async (req, res) => {
-  const id_usuario = parseInt(req.params.id, 10);
-
-  try {
-    const tabela = await tabelaPerfilParaUsuario(id_usuario);
-    if (!tabela)
-      return res.status(404).json({ erro: "Usuário não encontrado" });
-
-    const [rows] = await promiseConn.query(
-      `SELECT p.id_necessidade AS id_habilidade, h.nome_habilidade
-       FROM ${tabela} p
-       JOIN habilidades h ON p.id_necessidade = h.id_habilidade
-       WHERE p.id_usuario = ?`,
-      [id_usuario]
-    );
-
-    res.status(200).json({ habilidades: rows });
-  } catch (err) {
-    console.error("Erro ao buscar habilidades:", err);
-    res.status(500).json({ erro: "Erro ao buscar habilidades." });
-  }
 };

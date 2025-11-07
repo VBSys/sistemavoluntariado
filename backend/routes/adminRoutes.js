@@ -22,6 +22,20 @@ router.get("/painel", autenticar, verificarAdmin, (req, res) => {
   res.json({ mensagem: "Painel administrativo acessado com sucesso." });
 });
 
+router.get("/tipo/:id_tipo", adminController.listarPorTipo);
+// Rotas específicas primeiro
+router.get("/consultar", adminController.consultarUsuarios);
+router.get("/todos", adminController.buscarTodosUsuarios);
+
+// Excluir usuário por e-mail (apenas admin)
+router.delete(
+  "/email",
+  autenticar,
+  verificarAdmin,
+  adminController.deletarUsuarioPorEmail
+);
+
+// Rota com parâmetro por último
 router.delete(
   "/:id",
   autenticar,

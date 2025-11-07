@@ -1,15 +1,16 @@
 const db = require("../config/db");
 
 // Buscar perfil do beneficiário por ID
+// Agora o esquema é único: tabela `perfil` contém necessidade_1/2/3
 exports.buscarPerfil = async (req, res) => {
   try {
-    const id = req.user.id; // ID do usuário autenticado
+    const id = req.user.id || req.user.id_usuario; // ID do usuário autenticado
 
-    // Busca dados básicos do usuário e descrição no perfil
+    // Busca dados básicos do usuário e colunas do perfil
     const [rows] = await db.promise().query(
-      `SELECT u.nome_completo as nome, u.email, p.descricao 
-         FROM usuarios u 
-         LEFT JOIN perfil_beneficiario p ON u.id_usuario = p.id_usuario
+      `SELECT u.nome_completo as nome, u.email, p.descricao, p.necessidade_1, p.necessidade_2, p.necessidade_3
+         FROM usuarios u
+         LEFT JOIN perfil p ON u.id_usuario = p.id_usuario
          WHERE u.id_usuario = ?`,
       [id]
     );
@@ -18,18 +19,20 @@ exports.buscarPerfil = async (req, res) => {
       return res.status(404).json({ erro: "Beneficiário não encontrado" });
     }
 
-    // Busca as necessidades do beneficiário no novo esquema (perfil_beneficiario)
-    const [necessidades] = await db.promise().query(
-      `SELECT h.nome_habilidade as necessidade
-       FROM perfil_beneficiario p
-       JOIN habilidades h ON p.id_necessidade = h.id_habilidade
-       WHERE p.id_usuario = ?`,
-      [id]
-    );
+    const perfil = rows[0];
+    const necessidades = [
+      perfil.necessidade_1,
+      perfil.necessidade_2,
+      perfil.necessidade_3,
+    ]
+      .filter((n) => n !== null && n !== undefined && String(n).trim() !== "")
+      .map((n) => String(n).trim());
 
     res.json({
-      ...rows[0],
-      necessidades: necessidades.map((n) => n.necessidade),
+      nome: perfil.nome,
+      email: perfil.email,
+      descricao: perfil.descricao,
+      necessidades,
     });
   } catch (err) {
     console.error("Erro ao buscar perfil:", err);
@@ -38,9 +41,10 @@ exports.buscarPerfil = async (req, res) => {
 };
 
 // Atualizar perfil do beneficiário
+// Agora grava em `perfil` (necessidade_1/2/3)
 exports.atualizarPerfil = async (req, res) => {
   try {
-    const id = req.user.id;
+    const id = req.user.id || req.user.id_usuario;
     const { nome, descricao, necessidades } = req.body;
 
     // Atualiza dados básicos do usuário
@@ -53,56 +57,55 @@ exports.atualizarPerfil = async (req, res) => {
         ]);
     }
 
-    // Atualiza descrição no perfil_beneficiario
-    if (typeof descricao === "string") {
-      // Tenta update; se não existir, insere uma linha com id_necessidade NULL
-      const [updateResult] = await db
-        .promise()
-        .query(
-          "UPDATE perfil_beneficiario SET descricao = ? WHERE id_usuario = ?",
-          [descricao, id]
-        );
+    // Verifica se perfil já existe
+    const [perfilRows] = await db
+      .promise()
+      .query("SELECT id_perfil FROM perfil WHERE id_usuario = ?", [id]);
+    const perfilExists = perfilRows && perfilRows.length > 0;
 
-      if (updateResult.affectedRows === 0) {
+    // Atualiza descrição no perfil; insere se não existir
+    if (typeof descricao === "string") {
+      if (perfilExists) {
+        await db
+          .promise()
+          .query("UPDATE perfil SET descricao = ? WHERE id_usuario = ?", [
+            descricao,
+            id,
+          ]);
+      } else {
         await db
           .promise()
           .query(
-            "INSERT INTO perfil_beneficiario (id_usuario, descricao, id_necessidade) VALUES (?, ?, NULL)",
-            [id, descricao]
+            "INSERT INTO perfil (id_usuario, nome, descricao) VALUES (?, ?, ?)",
+            [id, nome || null, descricao]
           );
       }
     }
 
-    // Se houver novas necessidades, atualiza (substitui)
-    if (necessidades && necessidades.length > 0) {
-      // Remove registros antigos na tabela de perfil
-      await db
-        .promise()
-        .query("DELETE FROM perfil_beneficiario WHERE id_usuario = ?", [id]);
+    // Atualiza necessidades (substitui os 3 campos) quando fornecidas
+    if (Array.isArray(necessidades)) {
+      // normaliza para até 3 entradas
+      const n = [null, null, null];
+      for (let i = 0; i < Math.min(3, necessidades.length); i++) {
+        const v = necessidades[i];
+        n[i] = v !== undefined && v !== null ? String(v).trim() : null;
+      }
 
-      // Insere novas necessidades; aceita id ou nome da habilidade
-      for (const necessidade of necessidades) {
-        let id_habilidade = null;
-        if (typeof necessidade === "number") {
-          id_habilidade = necessidade;
-        } else {
-          const [hrows] = await db
-            .promise()
-            .query(
-              "SELECT id_habilidade FROM habilidades WHERE nome_habilidade = ? LIMIT 1",
-              [necessidade]
-            );
-          if (hrows && hrows[0]) id_habilidade = hrows[0].id_habilidade;
-        }
-
-        if (id_habilidade) {
-          await db
-            .promise()
-            .query(
-              "INSERT INTO perfil_beneficiario (id_usuario, descricao, id_necessidade) VALUES (?, NULL, ?)",
-              [id, id_habilidade]
-            );
-        }
+      if (perfilExists) {
+        await db
+          .promise()
+          .query(
+            "UPDATE perfil SET necessidade_1 = ?, necessidade_2 = ?, necessidade_3 = ? WHERE id_usuario = ?",
+            [n[0], n[1], n[2], id]
+          );
+      } else {
+        // se perfil não existia, criamos com nome/descricao possivelmente nulos e preenchemos necessidades
+        await db
+          .promise()
+          .query(
+            "INSERT INTO perfil (id_usuario, nome, descricao, necessidade_1, necessidade_2, necessidade_3) VALUES (?, ?, ?, ?, ?, ?)",
+            [id, nome || null, descricao || null, n[0], n[1], n[2]]
+          );
       }
     }
 

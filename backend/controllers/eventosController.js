@@ -20,8 +20,14 @@ exports.criarEvento = async (req, res) => {
     const voluntario = participantes.find((p) => p.tipo === 1);
     const beneficiario = participantes.find((p) => p.tipo === 2);
 
+    // Se o participante voluntário não foi informado, tente usar o usuário autenticado
+    const usuarioAutenticado = req.user && (req.user.id_usuario || req.user.id);
+    const voluntarioId = voluntario
+      ? voluntario.id_usuario
+      : usuarioAutenticado || null;
+
     const [result] = await db.promise().query(
-      `INSERT INTO eventos_voluntariado (titulo_evento, descricao_evento, data_evento, hora_inicio, hora_fim, local, id_voluntario, id_beneficiario)
+      `INSERT INTO eventos (titulo_evento, descricao_evento, data_evento, hora_inicio, hora_fim, local, id_voluntario, id_beneficiario)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         titulo_evento,
@@ -30,7 +36,7 @@ exports.criarEvento = async (req, res) => {
         hora_inicio || null,
         hora_fim || null,
         local || null,
-        voluntario ? voluntario.id_usuario : null,
+        voluntarioId,
         beneficiario ? beneficiario.id_usuario : null,
       ]
     );

@@ -2,77 +2,25 @@ const jwt = require("jsonwebtoken");
 
 // Garante que o JWT_SECRET sempre tenha valor
 const JWT_SECRET = process.env.JWT_SECRET || "nexassist_jwt_secret_key_2025";
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const db = require("../config/db");
 
 //
 // 📌 Listar todos os usuários (com filtro opcional por email)
 //
 
-exports.listarUsuarios = (req, res) => {
-  const { email } = req.query;
-  const { id_tipo } = req.query;
-  const { nome_completo } = req.query;
-
-  let sql = `
-      SELECT u.id_usuario, u.nome_completo, u.email, u.id_tipo
-      FROM usuarios u
-    `;
-  const params = [];
-
-  if (nome_completo) {
-    sql += " WHERE nome_completo = ?";
-    params.push(nome_completo);
-  }
-
-  if (email) {
-    sql += " WHERE email = ?";
-    params.push(email);
-  }
-  if (id_tipo) {
-    sql += " WHERE id_tipo = ?";
-    params.push(id_tipo);
-  }
-
-  db.query(sql, params, (err, results) => {
-    if (err) return res.status(500).json({ erro: "Erro ao buscar usuários" });
-    res.json(results);
-  });
-};
-
-//
-// 📌 Buscar usuário por ID
-//
-
-exports.buscarUsuarioPorId = (req, res) => {
-  const { id } = req.params;
-
-  const sql = `
-      SELECT id_usuario, nome_completo, email, id_tipo
-      FROM usuarios
-      WHERE id_usuario = ?
-    `;
-
-  db.query(sql, [id], (err, results) => {
-    if (err) return res.status(500).json({ erro: "Erro ao buscar usuário" });
-    if (results.length === 0)
-      return res.status(404).json({ erro: "Usuário não encontrado" });
-
-    res.json(results[0]);
-  });
-};
-
 //
 // 📌 Criar novo usuário (com senha criptografada)
 //
 
 exports.criarUsuario = async (req, res) => {
-  const { nome_completo, email, senha, id_usuario} = req.body;
+  // Espera id_tipo (tipo do usuário) em vez de id_usuario
+  const { nome_completo, email, senha, id_tipo } = req.body;
 
-  if (!nome_completo || !email || !senha || !id_usuario) {
+  if (!nome_completo || !email || !senha || !id_tipo) {
     return res.status(400).json({
       erro: "Campos obrigatórios ausentes",
-      detalhes: "nome_completo, email, senha e id_usuario são obrigatórios",
+      detalhes: "nome_completo, email, senha e id_tipo são obrigatórios",
     });
   }
 
@@ -80,18 +28,21 @@ exports.criarUsuario = async (req, res) => {
     const senhaCriptografada = await bcrypt.hash(senha, 10);
 
     const query = `
-        INSERT INTO usuarios (nome_completo, email, senha, id_usuario)
+        INSERT INTO usuarios (nome_completo, email, senha, id_tipo)
         VALUES (?, ?, ?, ?)
       `;
 
     db.query(
       query,
-      [nome_completo, email, senhaCriptografada || null, id_usuario],
+      [nome_completo, email, senhaCriptografada || null, id_tipo],
       (err, result) => {
         if (err) {
-          console.log("ola2");
-          console.error("❌ Usuário já existe:", err.message);
-          return res.status(500).json({ erro: "Usuário já existe" });
+          console.error("❌ Erro ao cadastrar usuário:", err.message);
+          // Se violação de chave única no email, retornar 409
+          if (err.code === "ER_DUP_ENTRY") {
+            return res.status(409).json({ erro: "Email já cadastrado" });
+          }
+          return res.status(500).json({ erro: "Erro ao cadastrar usuário" });
         }
 
         res.status(201).json({
@@ -132,8 +83,7 @@ exports.loginUsuario = (req, res) => {
     const usuario = results[0];
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
 
-    if (!senhaValida)
-      return res.status(401).json({ erro: "Senha incorreta" });
+    if (!senhaValida) return res.status(401).json({ erro: "Senha incorreta" });
 
     // 🔑 Gera o token com os campos necessários
     const token = jwt.sign(
@@ -160,7 +110,6 @@ exports.loginUsuario = (req, res) => {
     });
   });
 };
-
 
 //
 // 📌 Retornar dados do usuário logado (usando token)
@@ -201,6 +150,44 @@ exports.listarPorTipo = (req, res) => {
     if (err)
       return res.status(500).json({ erro: "Erro ao buscar usuários por tipo" });
     res.json(results);
+  });
+};
+
+exports.buscarUsuarioPorId = (req, res) => {
+  const { id } = req.params;
+
+  const query = `
+    SELECT id_usuario, nome_completo, email, id_tipo
+    FROM usuarios
+    WHERE id_usuario = ?
+  `;
+
+  db.query(query, [id], (err, results) => {
+    if (err) return res.status(500).json({ erro: "Erro ao buscar usuário" });
+    if (results.length === 0)
+      return res.status(404).json({ erro: "Usuário não encontrado" });
+    res.json(results[0]);
+  });
+};
+
+// 📌 Deletar usuário por email
+exports.deletarUsuarioPorEmail = (req, res) => {
+  const { email } = req.query;
+
+  if (!email) {
+    return res.status(400).json({ erro: "Parâmetro 'email' é obrigatório" });
+  }
+
+  const query = `DELETE FROM usuarios WHERE email = ?`;
+
+  db.query(query, [email], (err, result) => {
+    if (err) return res.status(500).json({ erro: "Erro ao excluir usuário" });
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ erro: "Usuário não encontrado" });
+    }
+
+    res.json({ mensagem: "Usuário excluído com sucesso", email });
   });
 };
 
